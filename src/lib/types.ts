@@ -1,28 +1,25 @@
-export type CoverMotif = "rings" | "grid" | "split" | "orbit" | "bars" | "arc";
-
-export type AlbumCover = {
-  from: string;
-  to: string;
-  accent: string;
-  motif: CoverMotif;
-};
-
-export type Track = {
-  id: string;
-  albumId: string;
-  title: string;
-  duration: number;
-  src: string;
-  imported?: boolean;
-};
-
-export type Album = {
-  id: string;
-  title: string;
+export type AlbumArtist = {
+  album: string;
   artist: string;
-  year: number;
-  genre: string;
-  liner: string;
-  cover: AlbumCover;
-  trackIds: string[];
+};
+
+export type AlbumListen = AlbumArtist & {
+  listenCount: number;
+};
+
+export type PreviewHit = AlbumListen & {
+  coverUrl: string;
+  previews: string[];
+};
+
+export type ParseIssue = {
+  code: "empty" | "unreadable" | "no-album-artist" | "unknown-format";
+  detail: string;
+};
+
+export type ParseResult = {
+  listens: AlbumListen[];
+  skippedRows: number;
+  sourceLabel: string;
+  issues: ParseIssue[];
 };

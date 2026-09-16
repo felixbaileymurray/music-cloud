@@ -1,26 +1,23 @@
 # Music Cloud
 
-Album-first listening library. Browse a seeded shelf, open an album, play it through a persistent bar, or import audio from this computer (stored only in the browser).
+Cover art cloud from a listening history list. Hover a cover to hear a 30-second snippet.
+
+Not a library player. Albums without a matched preview are dropped before anything renders.
 
 ## Run locally
 
-The app lives on `cursor/music-cloud-first-slice-3890` (and `main` once pulled). If `package.json` is missing, you are on the empty seed commit:
-
 ```bash
-git fetch origin
-git checkout cursor/music-cloud-first-slice-3890
-# or: git checkout main && git pull
 npm install
 npm run dev
 ```
 
 Open [http://127.0.0.1:43217](http://127.0.0.1:43217).
 
-## What you can do
+## Use
 
-- Browse six seeded albums and search by title, artist, genre, or track
-- Open an album page and play the whole record or a single track
-- Keep listening while you move between the library and album pages
-- Import MP3/WAV/FLAC/AAC files into a local **Imported** album (IndexedDB, nothing uploaded)
+1. Drop a Spotify extended streaming-history JSON export, a CSV with `album` and `artist` columns, or paste `Album - Artist` lines. An example CSV is included (`public/example-history.csv`).
+2. Wait for the preprocess pass (iTunes, then Deezer). Unmatched albums never appear.
+3. Set cloud size. Cover size follows listen count.
+4. Click once to enable sound, then hover.
 
-Seeded audio is short generated loops so playback works offline without copyrighted recordings.
+Snippets fade in and out. A clip does not loop. Hover away and back to hear the next of up to three tracks.
