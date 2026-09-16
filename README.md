@@ -4,7 +4,12 @@ Album-first listening library. Browse a seeded shelf, open an album, play it thr
 
 ## Run locally
 
+The app lives on `cursor/music-cloud-first-slice-3890` (and `main` once pulled). If `package.json` is missing, you are on the empty seed commit:
+
 ```bash
+git fetch origin
+git checkout cursor/music-cloud-first-slice-3890
+# or: git checkout main && git pull
 npm install
 npm run dev
 ```

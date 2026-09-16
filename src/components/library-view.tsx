@@ -110,8 +110,6 @@ export function LibraryView() {
     return matchesImport ? [importedAlbum, ...seeded] : seeded;
   }, [query, importedAlbum, importedTracks]);
 
-  const loadingImports = imports === null;
-
   async function handleClearImports() {
     await clearImports();
     for (const url of urlsRef.values()) URL.revokeObjectURL(url);
@@ -147,9 +145,7 @@ export function LibraryView() {
           </p>
         ) : null}
 
-        {loadingImports ? (
-          <p className="text-sm text-muted-foreground">Opening your shelf…</p>
-        ) : visible.length === 0 ? (
+        {visible.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/15 px-6 py-16 text-center">
             <p className="font-heading text-xl">Nothing matches that search.</p>
             <p className="mt-2 text-sm text-muted-foreground">

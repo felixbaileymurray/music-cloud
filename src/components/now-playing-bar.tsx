@@ -80,8 +80,8 @@ export function NowPlayingBar() {
               step={0.1}
               value={[Math.min(currentTime, knownDuration || 0)]}
               onValueChange={(value) => {
-                const nextValue = Array.isArray(value) ? value[0] : 0;
-                seek(nextValue ?? 0);
+                const nextValue = Array.isArray(value) ? value[0] : value;
+                seek(typeof nextValue === "number" ? nextValue : 0);
               }}
               disabled={!canSeek}
               aria-label="Seek"
@@ -93,7 +93,7 @@ export function NowPlayingBar() {
           ) : null}
         </div>
 
-        <div className="hidden items-center justify-end gap-2 md:flex">
+        <div className="flex items-center justify-end gap-2">
           <Volume2Icon className="size-4 text-muted-foreground" />
           <Slider
             className="w-28"
@@ -102,8 +102,8 @@ export function NowPlayingBar() {
             step={0.01}
             value={[volume]}
             onValueChange={(value) => {
-              const nextValue = Array.isArray(value) ? value[0] : 0;
-              setVolume(nextValue ?? 0);
+              const nextValue = Array.isArray(value) ? value[0] : value;
+              setVolume(typeof nextValue === "number" ? nextValue : 0);
             }}
             aria-label="Volume"
           />
