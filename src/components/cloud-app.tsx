@@ -189,7 +189,6 @@ export function CloudApp() {
 async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
   const key = cacheKey(listen.album, listen.artist);
   const cached = await idbGet(key);
-  if (cached === null) return null;
   if (cached) {
     return { ...cached, listenCount: listen.listenCount };
   }
@@ -201,7 +200,6 @@ async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
   });
 
   if (response.status === 404) {
-    await idbSet(key, null);
     return null;
   }
   if (!response.ok) {
