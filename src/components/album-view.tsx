@@ -41,11 +41,32 @@ export function AlbumView({ albumId }: { albumId: string }) {
   }, [albumId, urlsRef]);
 
   useEffect(() => {
-    void refreshImports();
+    if (albumId !== "imported") return;
+    let cancelled = false;
+    listImports()
+      .then((records) => {
+        if (cancelled) return;
+        for (const [id, url] of urlsRef) {
+          if (!records.some((record) => record.id === id)) {
+            URL.revokeObjectURL(url);
+            urlsRef.delete(id);
+          }
+        }
+        for (const record of records) {
+          if (!urlsRef.has(record.id)) {
+            urlsRef.set(record.id, URL.createObjectURL(record.blob));
+          }
+        }
+        setImportedTracks(recordsToTracks(records, urlsRef));
+      })
+      .catch(() => {
+        if (!cancelled) setImportedTracks([]);
+      });
     return () => {
+      cancelled = true;
       for (const url of urlsRef.values()) URL.revokeObjectURL(url);
     };
-  }, [refreshImports, urlsRef]);
+  }, [albumId, urlsRef]);
 
   const album: Album | undefined = useMemo(() => {
     if (seeded) return seeded;

@@ -54,20 +54,50 @@ export function LibraryView() {
   }, [urlsRef]);
 
   useEffect(() => {
-    void refreshImports();
+    let cancelled = false;
+    listImports()
+      .then((records) => {
+        if (cancelled) return;
+        for (const [id, url] of urlsRef) {
+          if (!records.some((record) => record.id === id)) {
+            URL.revokeObjectURL(url);
+            urlsRef.delete(id);
+          }
+        }
+        for (const record of records) {
+          if (!urlsRef.has(record.id)) {
+            urlsRef.set(record.id, URL.createObjectURL(record.blob));
+          }
+        }
+        setImports(records);
+        setImportError(null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setImportError("Imported files could not be read from this browser.");
+        setImports([]);
+      });
     return () => {
+      cancelled = true;
       for (const url of urlsRef.values()) URL.revokeObjectURL(url);
     };
-  }, [refreshImports, urlsRef]);
+  }, [urlsRef]);
 
   const importedTracks: Track[] = useMemo(() => {
     if (!imports?.length) return [];
     return recordsToTracks(imports, urlsRef);
   }, [imports, urlsRef]);
 
-  const importedAlbum: Album | null = importedTracks.length
-    ? { ...importedAlbumShell, trackIds: importedTracks.map((track) => track.id) }
-    : null;
+  const importedAlbum: Album | null = useMemo(
+    () =>
+      importedTracks.length
+        ? {
+            ...importedAlbumShell,
+            trackIds: importedTracks.map((track) => track.id),
+          }
+        : null,
+    [importedTracks]
+  );
 
   const visible = useMemo(() => {
     const seeded = searchCatalog(query);

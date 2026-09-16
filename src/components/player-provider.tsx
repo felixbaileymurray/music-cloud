@@ -39,26 +39,48 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const queueRef = useRef<Track[]>([]);
   const indexRef = useRef(0);
+  const loadAtRef = useRef<(index: number, autoplay: boolean) => void>(
+    () => undefined
+  );
   const [album, setAlbum] = useState<Album | null>(null);
   const [track, setTrack] = useState<Track | null>(null);
   const [queue, setQueue] = useState<Track[]>([]);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolumeState] = useState(0.85);
+  const [volume, setVolumeState] = useState(() => {
+    if (typeof window === "undefined") return 0.85;
+    const stored = Number(localStorage.getItem(VOLUME_KEY));
+    return Number.isFinite(stored) && stored >= 0 && stored <= 1 ? stored : 0.85;
+  });
   const [error, setError] = useState<string | null>(null);
+
+  const loadAt = useCallback((index: number, autoplay: boolean) => {
+    const audio = audioRef.current;
+    const nextTrack = queueRef.current[index];
+    if (!audio || !nextTrack) return;
+    indexRef.current = index;
+    setTrack(nextTrack);
+    setError(null);
+    setCurrentTime(0);
+    audio.src = nextTrack.src;
+    if (autoplay) {
+      void audio.play().catch(() => {
+        setError("Playback was blocked. Press play to start.");
+        setPlaying(false);
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAtRef.current = loadAt;
+  }, [loadAt]);
 
   useEffect(() => {
     const audio = new Audio();
     audio.preload = "metadata";
+    audio.volume = volume;
     audioRef.current = audio;
-    const stored = Number(localStorage.getItem(VOLUME_KEY));
-    if (Number.isFinite(stored) && stored >= 0 && stored <= 1) {
-      audio.volume = stored;
-      setVolumeState(stored);
-    } else {
-      audio.volume = 0.85;
-    }
 
     const onTime = () => setCurrentTime(audio.currentTime);
     const onMeta = () => setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
@@ -67,7 +89,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const onEnd = () => {
       const nextIndex = indexRef.current + 1;
       if (nextIndex < queueRef.current.length) {
-        loadAt(nextIndex, true);
+        loadAtRef.current(nextIndex, true);
       } else {
         setPlaying(false);
       }
@@ -95,23 +117,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener("error", onError);
       audioRef.current = null;
     };
-  }, []);
-
-  const loadAt = useCallback((index: number, autoplay: boolean) => {
-    const audio = audioRef.current;
-    const nextTrack = queueRef.current[index];
-    if (!audio || !nextTrack) return;
-    indexRef.current = index;
-    setTrack(nextTrack);
-    setError(null);
-    setCurrentTime(0);
-    audio.src = nextTrack.src;
-    if (autoplay) {
-      void audio.play().catch(() => {
-        setError("Playback was blocked. Press play to start.");
-        setPlaying(false);
-      });
-    }
+    // volume is applied once at construction; later changes go through setVolume
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const playAlbum = useCallback(
