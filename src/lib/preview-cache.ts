@@ -1,12 +1,7 @@
 import { cacheKey } from "@/lib/normalize";
-import type { AlbumArtist } from "@/lib/types";
+import type { AlbumArtist, PreviewMatch } from "@/lib/types";
 
-export type CachedPreview = {
-  coverUrl: string;
-  previews: string[];
-  album: string;
-  artist: string;
-} | null;
+export type CachedPreview = PreviewMatch | null;
 
 const memory = new Map<string, CachedPreview>();
 

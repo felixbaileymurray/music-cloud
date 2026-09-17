@@ -10,7 +10,7 @@ import {
   type Simulation,
 } from "d3-force";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PreviewHit } from "@/lib/types";
+import type { ClipRef, PreviewHit } from "@/lib/types";
 import { playSnippet, stopSnippet } from "@/lib/snippet-player";
 import "@/components/spa.css";
 
@@ -150,7 +150,7 @@ export function CoverCloud({
   onHoverChange?: (album: PreviewHit | null) => void;
   onLockToggle?: (album: PreviewHit) => void;
   onPreviewChange?: (
-    preview: { album: string; artist: string; url: string } | null
+    preview: { album: string; artist: string; clip: ClipRef } | null
   ) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
@@ -302,15 +302,15 @@ export function CoverCloud({
 
     setHoveredId(node.id);
     onHoverChange?.(node);
-    if (!audioUnlocked || node.previews.length === 0) {
+    if (!audioUnlocked || node.clips.length === 0) {
       onPreviewChange?.(null);
       return;
     }
     const next = cycleRef.current.get(node.id) ?? 0;
-    const url = node.previews[next % node.previews.length];
+    const clip = node.clips[next % node.clips.length];
     cycleRef.current.set(node.id, next + 1);
-    onPreviewChange?.({ album: node.album, artist: node.artist, url });
-    void playSnippet(url);
+    onPreviewChange?.({ album: node.album, artist: node.artist, clip });
+    void playSnippet(clip);
   }
 
   function endHover(node: CloudNode) {

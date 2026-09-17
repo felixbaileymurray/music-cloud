@@ -33,6 +33,7 @@ import { unlockAudio } from "@/lib/snippet-player";
 import type {
   AlbumDetails,
   AlbumListen,
+  ClipRef,
   ParseResult,
   PreviewHit,
 } from "@/lib/types";
@@ -52,7 +53,12 @@ export function CloudApp() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [resolved, setResolved] = useState<PreviewHit[]>([]);
-  const [progress, setProgress] = useState({ done: 0, total: 0, kept: 0 });
+  const [progress, setProgress] = useState({
+    done: 0,
+    total: 0,
+    found: 0,
+    dropped: 0,
+  });
   const [cloudSize, setCloudSize] = useState(DEFAULT_CLOUD);
   const [sizeRatio, setSizeRatio] = useState(DEFAULT_SIZE_RATIO);
   const [collisionPad, setCollisionPad] = useState(DEFAULT_COLLISION_PAD);
@@ -83,7 +89,7 @@ export function CloudApp() {
   const [hoverPreview, setHoverPreview] = useState<{
     album: string;
     artist: string;
-    url: string;
+    clip: ClipRef;
   } | null>(null);
   const [exploreResetToken, setExploreResetToken] = useState(0);
   const albumDetailsCacheRef = useRef(new Map<string, AlbumDetails>());
@@ -218,10 +224,17 @@ export function CloudApp() {
     setHovered(null);
     setLocked(null);
     setHoverPreview(null);
-    setProgress({ done: 0, total: result.listens.length, kept: 0 });
+    setProgress({
+      done: 0,
+      total: result.listens.length,
+      found: 0,
+      dropped: 0,
+    });
 
     const kept: PreviewHit[] = [];
     let done = 0;
+    let found = 0;
+    let dropped = 0;
     let cursor = 0;
     const listens = result.listens;
 
@@ -232,8 +245,13 @@ export function CloudApp() {
         const listen = listens[index];
         const hit = await resolveOne(listen);
         done += 1;
-        if (hit) kept.push(hit);
-        setProgress({ done, total: listens.length, kept: kept.length });
+        if (hit) {
+          kept.push(hit);
+          found += 1;
+        } else {
+          dropped += 1;
+        }
+        setProgress({ done, total: listens.length, found, dropped });
       }
     }
 
@@ -241,6 +259,12 @@ export function CloudApp() {
       await Promise.all([worker(), worker()]);
       kept.sort((a, b) => b.listenCount - a.listenCount);
       setResolved(kept);
+      setProgress({
+        done: listens.length,
+        total: listens.length,
+        found: kept.length,
+        dropped: listens.length - kept.length,
+      });
       if (kept.length === 0) {
         setPhase("empty-match");
         return;
@@ -269,17 +293,18 @@ export function CloudApp() {
     setUploadOpen(false);
   }
 
-  const focusedPreviewUrl =
+  const focusedClip =
     focused &&
     hoverPreview &&
     focused.album === hoverPreview.album &&
     focused.artist === hoverPreview.artist
-      ? hoverPreview.url
+      ? hoverPreview.clip
       : null;
 
+  const resolveStats = `${progress.total} processed · ${progress.found} found · ${progress.dropped} dropped`;
   const statusCopy =
     phase === "cloud"
-      ? `${visible.length} of ${resolved.length} matched albums${
+      ? `${visible.length} showing · ${resolveStats}${
           parsed?.skippedRows
             ? ` · ${parsed.skippedRows} rows skipped (no album + artist)`
             : ""
@@ -287,7 +312,7 @@ export function CloudApp() {
       : phase === "resolve"
         ? "Looking up covers and snippets…"
         : phase === "empty-match"
-          ? "No snippets matched"
+          ? `No snippets matched · ${resolveStats}`
           : "Create a cloud from your listening history";
 
   return (
@@ -440,7 +465,7 @@ export function CloudApp() {
                   listenCount={focused?.listenCount}
                   isLoading={albumLoading}
                   error={albumError}
-                  previewUrl={focusedPreviewUrl}
+                  activeClip={focusedClip}
                   isLocked={locked != null}
                 />
               </Card>
@@ -492,7 +517,8 @@ export function CloudApp() {
                   <Heading level={1}>Fetching covers and snippets</Heading>
                   <Text type="body" color="secondary">
                     Deezer first (top tracks by popularity), iTunes if there is no
-                    match. Albums without audio never enter the cloud.
+                    match. Each preview is probed; albums without playable audio are
+                    dropped before the cloud renders.
                   </Text>
                   <ProgressBar
                     label="Lookup progress"
@@ -500,7 +526,7 @@ export function CloudApp() {
                     max={100}
                     hasValueLabel
                     formatValueLabel={() =>
-                      `${progress.done} / ${progress.total} looked up · ${progress.kept} with audio`
+                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} dropped`
                     }
                   />
                 </VStack>
@@ -620,16 +646,24 @@ async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
 
   const data = (await response.json()) as {
     coverUrl: string;
-    previews: string[];
+    clips: PreviewHit["clips"];
     album: string;
     artist: string;
   };
-  await idbSet(key, data);
+  if (!Array.isArray(data.clips) || data.clips.length === 0) {
+    return null;
+  }
+  const stored = {
+    coverUrl: data.coverUrl,
+    clips: data.clips,
+    album: data.album,
+    artist: data.artist,
+  };
+  await idbSet(key, stored);
   return {
+    ...stored,
     album: listen.album,
     artist: listen.artist,
     listenCount: listen.listenCount,
-    coverUrl: data.coverUrl,
-    previews: data.previews,
   };
 }

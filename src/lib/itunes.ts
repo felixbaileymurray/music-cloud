@@ -1,5 +1,12 @@
 import { namesMatch } from "@/lib/normalize";
-import type { AlbumArtist, AlbumDetails, AlbumTrack } from "@/lib/types";
+import { previewUrlPlayable } from "@/lib/preview-probe";
+import type {
+  AlbumArtist,
+  AlbumDetails,
+  AlbumTrack,
+  ClipRef,
+  PreviewMatch,
+} from "@/lib/types";
 
 type ItunesAlbum = {
   wrapperType?: string;
@@ -91,25 +98,36 @@ function mapItunesTracks(items: Array<ItunesAlbum | ItunesTrack>): AlbumTrack[] 
     );
 }
 
-export async function lookupItunes(query: AlbumArtist) {
+export async function lookupItunes(
+  query: AlbumArtist
+): Promise<PreviewMatch | null> {
   const album = await findItunesAlbum(query);
   if (!album) return null;
 
   const lookup = await itunesJson<ItunesLookupResponse>(
     `https://itunes.apple.com/lookup?id=${album.collectionId}&entity=song&limit=200`
   );
-  const previews = (lookup.results ?? [])
+  const urls = (lookup.results ?? [])
     .filter(isItunesSong)
     .map((item) => item.previewUrl)
-    .filter((url): url is string => Boolean(url))
-    .slice(0, 3);
+    .filter((url): url is string => Boolean(url));
+
+  const clips: ClipRef[] = [];
+  for (const url of urls) {
+    if (clips.length >= 3) break;
+    if (clips.length === 0) {
+      const ok = await previewUrlPlayable(url);
+      if (!ok) continue;
+    }
+    clips.push({ kind: "itunes", url });
+  }
 
   const coverUrl = itunesArtwork(album.artworkUrl100);
-  if (!coverUrl || previews.length === 0) return null;
+  if (!coverUrl || clips.length === 0) return null;
 
   return {
     coverUrl,
-    previews,
+    clips,
     album: album.collectionName,
     artist: album.artistName,
   };

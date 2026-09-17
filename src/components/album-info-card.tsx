@@ -19,7 +19,7 @@ import {
   SpotifyIcon,
   YoutubeMusicIcon,
 } from "@/components/streaming-service-icons";
-import type { AlbumDetails } from "@/lib/types";
+import type { AlbumDetails, AlbumTrack, ClipRef } from "@/lib/types";
 import {
   previewUrlKey,
   streamingLinks,
@@ -57,12 +57,13 @@ function formatReleaseDate(value: string) {
   });
 }
 
-function trackMatchesPreview(
-  trackPreviewUrl: string | undefined,
-  previewUrl: string | null
-) {
-  if (!trackPreviewUrl || !previewUrl) return false;
-  return previewUrlKey(trackPreviewUrl) === previewUrlKey(previewUrl);
+function trackMatchesClip(track: AlbumTrack, clip: ClipRef | null) {
+  if (!clip) return false;
+  if (clip.kind === "deezer") {
+    return track.deezerTrackId === clip.trackId;
+  }
+  if (!track.previewUrl) return false;
+  return previewUrlKey(track.previewUrl) === previewUrlKey(clip.url);
 }
 
 export function AlbumInfoCard({
@@ -70,14 +71,14 @@ export function AlbumInfoCard({
   listenCount,
   isLoading,
   error,
-  previewUrl = null,
+  activeClip = null,
   isLocked = false,
 }: {
   details: AlbumDetails | null;
   listenCount?: number;
   isLoading: boolean;
   error: string | null;
-  previewUrl?: string | null;
+  activeClip?: ClipRef | null;
   isLocked?: boolean;
 }) {
   return (
@@ -188,10 +189,7 @@ export function AlbumInfoCard({
               <Text weight="semibold">Tracklist</Text>
               <List hasDividers density="compact">
                 {details.tracks.map((track, index) => {
-                  const isPreviewing = trackMatchesPreview(
-                    track.previewUrl,
-                    previewUrl
-                  );
+                  const isPreviewing = trackMatchesClip(track, activeClip);
                   return (
                     <ListItem
                       key={`${track.position ?? index}-${track.title}`}

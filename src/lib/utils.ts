@@ -9,6 +9,20 @@ export function previewUrlKey(url: string) {
   }
 }
 
+export function clipKey(clip: {
+  kind: "deezer" | "itunes";
+  trackId?: number;
+  url?: string;
+}) {
+  if (clip.kind === "deezer" && typeof clip.trackId === "number") {
+    return `deezer:${clip.trackId}`;
+  }
+  if (clip.kind === "itunes" && clip.url) {
+    return `itunes:${previewUrlKey(clip.url)}`;
+  }
+  return null;
+}
+
 export type StreamingService = "spotify" | "appleMusic" | "youtubeMusic";
 
 export type StreamingLink = {
