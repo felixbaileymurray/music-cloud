@@ -1,5 +1,6 @@
 import { namesMatch } from "@/lib/normalize";
-import type { AlbumArtist } from "@/lib/types";
+import { previewUrlPlayable } from "@/lib/preview-probe";
+import type { AlbumArtist, ClipRef, PreviewMatch } from "@/lib/types";
 
 type DeezerAlbum = {
   id: number;
@@ -14,12 +15,18 @@ type DeezerSearchResponse = {
 };
 
 type DeezerTrack = {
+  id: number;
   preview?: string;
   rank?: number;
 };
 
 type DeezerTracksResponse = {
   data?: DeezerTrack[];
+};
+
+type DeezerTrackLookup = {
+  id?: number;
+  preview?: string;
 };
 
 async function deezerJson<T>(url: string): Promise<T> {
@@ -30,7 +37,17 @@ async function deezerJson<T>(url: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function lookupDeezer(query: AlbumArtist) {
+export async function freshDeezerPreviewUrl(trackId: number) {
+  const track = await deezerJson<DeezerTrackLookup>(
+    `https://api.deezer.com/track/${trackId}`
+  );
+  const preview = track.preview?.trim();
+  return preview || null;
+}
+
+export async function lookupDeezer(
+  query: AlbumArtist
+): Promise<PreviewMatch | null> {
   const q = encodeURIComponent(`album:"${query.album}" artist:"${query.artist}"`);
   const search = await deezerJson<DeezerSearchResponse>(
     `https://api.deezer.com/search/album?q=${q}&limit=5`
@@ -58,18 +75,27 @@ export async function lookupDeezer(query: AlbumArtist) {
   const tracks = await deezerJson<DeezerTracksResponse>(
     `https://api.deezer.com/album/${album.id}/tracks?limit=50`
   );
-  const previews = [...(tracks.data ?? [])]
-    .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0))
-    .map((track) => track.preview)
-    .filter((url): url is string => Boolean(url))
-    .slice(0, 3);
+  const ranked = [...(tracks.data ?? [])]
+    .filter((track) => Boolean(track.preview) && Number.isFinite(track.id))
+    .sort((a, b) => (b.rank ?? 0) - (a.rank ?? 0));
+
+  const clips: ClipRef[] = [];
+  for (const track of ranked) {
+    if (clips.length >= 3) break;
+    // One live probe proves the album has audio; later plays refresh Deezer tokens.
+    if (clips.length === 0) {
+      const ok = await previewUrlPlayable(track.preview!);
+      if (!ok) continue;
+    }
+    clips.push({ kind: "deezer", trackId: track.id });
+  }
 
   const coverUrl = album.cover_xl || album.cover_medium;
-  if (!coverUrl || previews.length === 0) return null;
+  if (!coverUrl || clips.length === 0) return null;
 
   return {
     coverUrl,
-    previews,
+    clips,
     album: album.title,
     artist: album.artist?.name ?? query.artist,
   };

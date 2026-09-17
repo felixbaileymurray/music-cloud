@@ -277,11 +277,11 @@ export function CoverCloud({
 
   function beginHover(node: CloudNode) {
     setHoveredId(node.id);
-    if (!audioUnlocked || node.previews.length === 0) return;
+    if (!audioUnlocked || node.clips.length === 0) return;
     const next = cycleRef.current.get(node.id) ?? 0;
-    const url = node.previews[next % node.previews.length];
+    const clip = node.clips[next % node.clips.length];
     cycleRef.current.set(node.id, next + 1);
-    void playSnippet(url);
+    void playSnippet(clip);
   }
 
   function endHover(node: CloudNode) {
