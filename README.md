@@ -16,7 +16,7 @@ Open [http://127.0.0.1:43217](http://127.0.0.1:43217).
 ## Use
 
 1. Drop a Spotify extended streaming-history JSON export, a CSV with `album` and `artist` columns, or paste `Album - Artist` lines. An example CSV is included (`public/example-history.csv`).
-2. Wait for the preprocess pass (iTunes, then Deezer). Unmatched albums never appear.
+2. Wait for the preprocess pass (Deezer top tracks by popularity, then iTunes). Unmatched albums never appear.
 3. Set cloud size. Cover size follows listen count.
 4. Click once to enable sound, then hover.
 

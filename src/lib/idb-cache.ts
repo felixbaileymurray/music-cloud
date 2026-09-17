@@ -1,5 +1,6 @@
 const DB_NAME = "music-cloud-preview-cache";
 const STORE = "previews";
+// Bump when preview selection strategy changes so stale URLs are dropped.
 const VERSION = 2;
 
 export type StoredPreview = {

@@ -333,8 +333,8 @@ export function CloudApp() {
             <VStack gap={4} width="100%">
               <Heading level={1}>Fetching covers and snippets</Heading>
               <Text type="body" color="secondary">
-                iTunes first, Deezer if there is no match. Albums without audio
-                never enter the cloud.
+                Deezer first (top tracks by popularity), iTunes if there is no
+                match. Albums without audio never enter the cloud.
               </Text>
               <ProgressBar
                 label="Lookup progress"

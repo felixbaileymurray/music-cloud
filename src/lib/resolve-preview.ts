@@ -12,19 +12,19 @@ export async function resolvePreview(query: AlbumArtist) {
   if (cached !== undefined) return cached;
 
   try {
-    const itunes = await lookupItunes({ album, artist });
-    if (itunes) {
-      setCachedPreview({ album, artist }, itunes);
-      return itunes;
+    const deezer = await lookupDeezer({ album, artist });
+    if (deezer) {
+      setCachedPreview({ album, artist }, deezer);
+      return deezer;
     }
   } catch {
-    // Fall through to Deezer.
+    // Fall through to iTunes.
   }
 
   try {
-    const deezer = await lookupDeezer({ album, artist });
-    setCachedPreview({ album, artist }, deezer);
-    return deezer;
+    const itunes = await lookupItunes({ album, artist });
+    setCachedPreview({ album, artist }, itunes);
+    return itunes;
   } catch {
     setCachedPreview({ album, artist }, null);
     return null;
