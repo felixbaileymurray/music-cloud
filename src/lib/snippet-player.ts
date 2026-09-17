@@ -1,15 +1,21 @@
 import type { ClipRef } from "@/lib/types";
 
-const FADE_SECONDS = 0.09;
+const FADE_SECONDS = 0.12;
 
 type PlaySession = {
   source: AudioBufferSourceNode;
   gain: GainNode;
 };
 
+export type PlaySnippetOptions = {
+  /** Fired when the snippet finishes naturally (not when stopped). */
+  onEnded?: () => void;
+};
+
 let ctx: AudioContext | null = null;
 let current: PlaySession | null = null;
 let loadToken = 0;
+const bufferCache = new Map<string, AudioBuffer>();
 
 function getContext() {
   if (!ctx) {
@@ -37,25 +43,64 @@ function clipUrl(clip: ClipRef) {
   return `/api/clip?u=${encodeURIComponent(clip.url)}`;
 }
 
-export async function playSnippet(clip: ClipRef) {
+function clipCacheKey(clip: ClipRef) {
+  return clip.kind === "deezer"
+    ? `deezer:${clip.trackId}`
+    : `itunes:${clip.url}`;
+}
+
+async function fetchAndDecode(audio: AudioContext, clip: ClipRef) {
+  const response = await fetch(clipUrl(clip), {
+    cache: clip.kind === "deezer" ? "default" : "force-cache",
+  });
+  if (!response.ok) return null;
+  const bytes = await response.arrayBuffer();
+  return audio.decodeAudioData(bytes.slice(0));
+}
+
+async function loadBuffer(audio: AudioContext, clip: ClipRef, token: number) {
+  const key = clipCacheKey(clip);
+  const cached = bufferCache.get(key);
+  if (cached) return cached;
+
+  const buffer = await fetchAndDecode(audio, clip);
+  if (!buffer || token !== loadToken) return null;
+
+  bufferCache.set(key, buffer);
+  return buffer;
+}
+
+/** Warm the decode cache so album clip cycles transition with less silence. */
+export async function prefetchSnippet(clip: ClipRef) {
+  const key = clipCacheKey(clip);
+  if (bufferCache.has(key)) return;
+  const audio = getContext();
+  try {
+    const buffer = await fetchAndDecode(audio, clip);
+    if (buffer && !bufferCache.has(key)) {
+      bufferCache.set(key, buffer);
+    }
+  } catch {
+    // Best-effort warm; playback will retry.
+  }
+}
+
+export async function playSnippet(
+  clip: ClipRef,
+  options: PlaySnippetOptions = {}
+) {
   const audio = getContext();
   if (audio.state === "suspended") {
     await audio.resume();
   }
 
   const token = ++loadToken;
+  const { onEnded } = options;
   await fadeOutAndStop();
   if (token !== loadToken) return;
 
-  const response = await fetch(clipUrl(clip), {
-    cache: clip.kind === "deezer" ? "default" : "force-cache",
-  });
-  if (!response.ok) return;
-  const bytes = await response.arrayBuffer();
-  if (token !== loadToken) return;
-
-  const buffer = await audio.decodeAudioData(bytes.slice(0));
-  if (token !== loadToken) return;
+  const buffer = await loadBuffer(audio, clip, token);
+  if (!buffer || token !== loadToken) return;
 
   const gain = audio.createGain();
   gain.gain.setValueAtTime(0.0001, audio.currentTime);
@@ -66,12 +111,22 @@ export async function playSnippet(clip: ClipRef) {
   source.loop = false;
   source.connect(gain);
   source.start();
-  gain.gain.exponentialRampToValueAtTime(1, audio.currentTime + FADE_SECONDS);
+
+  const now = audio.currentTime;
+  const duration = buffer.duration;
+  gain.gain.exponentialRampToValueAtTime(1, now + FADE_SECONDS);
+  if (duration > FADE_SECONDS * 2) {
+    gain.gain.setValueAtTime(1, now + duration - FADE_SECONDS);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  }
 
   current = { source, gain };
   source.onended = () => {
     if (current?.source === source) {
       current = null;
+    }
+    if (token === loadToken) {
+      onEnded?.();
     }
   };
 }

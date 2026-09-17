@@ -11,7 +11,11 @@ import {
 } from "d3-force";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClipRef, PreviewHit } from "@/lib/types";
-import { playSnippet, stopSnippet } from "@/lib/snippet-player";
+import {
+  playSnippet,
+  prefetchSnippet,
+  stopSnippet,
+} from "@/lib/snippet-player";
 import "@/components/spa.css";
 
 type CloudNode = PreviewHit & {
@@ -158,13 +162,15 @@ export function CoverCloud({
   const cycleRef = useRef<Map<string, number>>(new Map());
   const hoverIdRef = useRef<string | null>(null);
   const lockedIdRef = useRef(lockedId);
+  const playingIdRef = useRef<string | null>(null);
+  const onPreviewChangeRef = useRef(onPreviewChange);
   const collisionPadRef = useRef(collisionPad);
   const [nodes, setNodes] = useState<CloudNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
 
   collisionPadRef.current = collisionPad;
-  lockedIdRef.current = lockedId;
+  onPreviewChangeRef.current = onPreviewChange;
 
   const sized = useMemo(() => {
     if (albums.length === 0) return [];
@@ -284,7 +290,22 @@ export function CoverCloud({
   }, [hoveredId]);
 
   useEffect(() => {
+    lockedIdRef.current = lockedId;
+    // Unlocking while not hovering the playing cover should stop the cycle.
+    if (
+      !lockedId &&
+      playingIdRef.current &&
+      hoverIdRef.current !== playingIdRef.current
+    ) {
+      playingIdRef.current = null;
+      onPreviewChangeRef.current?.(null);
+      void stopSnippet();
+    }
+  }, [lockedId]);
+
+  useEffect(() => {
     return () => {
+      playingIdRef.current = null;
       void stopSnippet();
     };
   }, []);
@@ -292,38 +313,71 @@ export function CoverCloud({
   useEffect(() => {
     if (exploreResetToken === 0) return;
     setHoveredId(null);
+    playingIdRef.current = null;
     onHoverChange?.(null);
     onPreviewChange?.(null);
     void stopSnippet();
   }, [exploreResetToken, onHoverChange, onPreviewChange]);
 
-  function beginHover(node: CloudNode) {
-    if (lockedIdRef.current && lockedIdRef.current !== node.id) return;
+  function stillFocused(nodeId: string) {
+    return (
+      hoverIdRef.current === nodeId || lockedIdRef.current === nodeId
+    );
+  }
 
-    setHoveredId(node.id);
-    onHoverChange?.(node);
+  function playNextClip(node: CloudNode) {
     if (!audioUnlocked || node.clips.length === 0) {
+      playingIdRef.current = null;
       onPreviewChange?.(null);
       return;
     }
+
     const next = cycleRef.current.get(node.id) ?? 0;
     const clip = node.clips[next % node.clips.length];
     cycleRef.current.set(node.id, next + 1);
+    playingIdRef.current = node.id;
     onPreviewChange?.({ album: node.album, artist: node.artist, clip });
-    void playSnippet(clip);
+    for (const other of node.clips) {
+      void prefetchSnippet(other);
+    }
+    void playSnippet(clip, {
+      onEnded: () => {
+        if (!stillFocused(node.id)) {
+          playingIdRef.current = null;
+          return;
+        }
+        playNextClip(node);
+      },
+    });
+  }
+
+  function beginHover(node: CloudNode) {
+    if (lockedIdRef.current && lockedIdRef.current !== node.id) return;
+
+    hoverIdRef.current = node.id;
+    setHoveredId(node.id);
+    onHoverChange?.(node);
+
+    // Locked (or still playing after re-enter): keep the current snippet cycle.
+    if (playingIdRef.current === node.id) return;
+
+    playNextClip(node);
   }
 
   function endHover(node: CloudNode) {
     if (hoverIdRef.current !== node.id) return;
 
-    // Lock freezes the hover-away visual: keep focus/dimming, only stop audio.
-    if (lockedIdRef.current) {
-      onPreviewChange?.(null);
-      void stopSnippet();
+    // Lock keeps swell/focus and lets snippets keep cycling off-cover.
+    if (lockedIdRef.current === node.id) {
+      hoverIdRef.current = null;
+      setHoveredId(null);
+      onHoverChange?.(null);
       return;
     }
 
+    hoverIdRef.current = null;
     setHoveredId(null);
+    playingIdRef.current = null;
     onHoverChange?.(null);
     onPreviewChange?.(null);
     void stopSnippet();
