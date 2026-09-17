@@ -12,6 +12,26 @@ export type PreviewHit = AlbumListen & {
   previews: string[];
 };
 
+export type AlbumTrack = {
+  title: string;
+  durationSec?: number;
+  position?: number;
+  previewUrl?: string;
+};
+
+export type AlbumDetails = {
+  album: string;
+  artist: string;
+  coverUrl: string;
+  genre?: string;
+  releaseDate?: string;
+  label?: string;
+  trackCount?: number;
+  durationSec?: number;
+  tracks: AlbumTrack[];
+  source: "deezer" | "itunes";
+};
+
 export type ParseIssue = {
   code: "empty" | "unreadable" | "no-album-artist" | "unknown-format";
   detail: string;

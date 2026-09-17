@@ -134,23 +134,37 @@ export function CoverCloud({
   sizeRatio = 4,
   collisionPad = 10,
   physics = DEFAULT_CLOUD_PHYSICS,
+  lockedId = null,
+  exploreResetToken = 0,
+  onHoverChange,
+  onLockToggle,
+  onPreviewChange,
 }: {
   albums: PreviewHit[];
   audioUnlocked: boolean;
   sizeRatio?: number;
   collisionPad?: number;
   physics?: CloudPhysics;
+  lockedId?: string | null;
+  exploreResetToken?: number;
+  onHoverChange?: (album: PreviewHit | null) => void;
+  onLockToggle?: (album: PreviewHit) => void;
+  onPreviewChange?: (
+    preview: { album: string; artist: string; url: string } | null
+  ) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const simRef = useRef<Simulation<CloudNode, undefined> | null>(null);
   const cycleRef = useRef<Map<string, number>>(new Map());
   const hoverIdRef = useRef<string | null>(null);
+  const lockedIdRef = useRef(lockedId);
   const collisionPadRef = useRef(collisionPad);
   const [nodes, setNodes] = useState<CloudNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
 
   collisionPadRef.current = collisionPad;
+  lockedIdRef.current = lockedId;
 
   const sized = useMemo(() => {
     if (albums.length === 0) return [];
@@ -275,33 +289,62 @@ export function CoverCloud({
     };
   }, []);
 
+  useEffect(() => {
+    if (exploreResetToken === 0) return;
+    setHoveredId(null);
+    onHoverChange?.(null);
+    onPreviewChange?.(null);
+    void stopSnippet();
+  }, [exploreResetToken, onHoverChange, onPreviewChange]);
+
   function beginHover(node: CloudNode) {
+    if (lockedIdRef.current && lockedIdRef.current !== node.id) return;
+
     setHoveredId(node.id);
-    if (!audioUnlocked || node.previews.length === 0) return;
+    onHoverChange?.(node);
+    if (!audioUnlocked || node.previews.length === 0) {
+      onPreviewChange?.(null);
+      return;
+    }
     const next = cycleRef.current.get(node.id) ?? 0;
     const url = node.previews[next % node.previews.length];
     cycleRef.current.set(node.id, next + 1);
+    onPreviewChange?.({ album: node.album, artist: node.artist, url });
     void playSnippet(url);
   }
 
   function endHover(node: CloudNode) {
-    if (hoverIdRef.current === node.id) {
-      setHoveredId(null);
+    if (hoverIdRef.current !== node.id) return;
+
+    // Lock freezes the hover-away visual: keep focus/dimming, only stop audio.
+    if (lockedIdRef.current) {
+      onPreviewChange?.(null);
       void stopSnippet();
+      return;
     }
+
+    setHoveredId(null);
+    onHoverChange?.(null);
+    onPreviewChange?.(null);
+    void stopSnippet();
   }
 
   return (
     <div ref={frameRef} className="cover-cloud">
       {nodes.map((node) => {
-        const active = hoveredId === node.id;
-        const dimmed = hoveredId !== null && !active;
-        const displayR = node.r * (active ? SWELL : 1);
+        const isHovered = hoveredId === node.id;
+        const isLocked = lockedId === node.id;
+        const emphasized = isHovered || isLocked;
+        const dimmed =
+          (hoveredId !== null || lockedId !== null) && !emphasized;
+        // Keep swell while locked so leaving the cover doesn't "hover away".
+        const displayR = node.r * (isHovered || isLocked ? SWELL : 1);
         return (
           <button
             key={node.id}
             type="button"
             aria-label={`${node.album} by ${node.artist}`}
+            aria-pressed={isLocked}
             onPointerEnter={(event) => {
               if (event.pointerType === "touch") return;
               beginHover(node);
@@ -313,12 +356,22 @@ export function CoverCloud({
             onPointerDown={(event) => {
               if (event.pointerType !== "touch") return;
               event.preventDefault();
+              if (lockedIdRef.current && lockedIdRef.current !== node.id) {
+                return;
+              }
               if (hoveredId === node.id) {
                 endHover(node);
               } else {
                 if (hoveredId) void stopSnippet();
                 beginHover(node);
               }
+            }}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (lockedIdRef.current && lockedIdRef.current !== node.id) {
+                return;
+              }
+              onLockToggle?.(node);
             }}
             className="cover-cloud__node"
             style={{
@@ -327,7 +380,10 @@ export function CoverCloud({
               width: displayR * 2,
               height: displayR * 2,
               opacity: dimmed ? 0.22 : 1,
-              zIndex: active ? "var(--z-dropdown)" : "var(--z-base)",
+              zIndex:
+                isHovered || isLocked
+                  ? "var(--z-dropdown)"
+                  : "var(--z-base)",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
