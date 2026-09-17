@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PreviewHit } from "@/lib/types";
 import { playSnippet, stopSnippet } from "@/lib/snippet-player";
+import "@/components/spa.css";
 
 type CloudNode = PreviewHit & {
   id: string;
@@ -23,7 +24,7 @@ type CloudNode = PreviewHit & {
 };
 
 const SWELL = 1.18;
-const PAD = 3;
+const PAD = 6;
 
 function radiusFor(count: number, minCount: number, maxCount: number) {
   const minR = 22;
@@ -157,7 +158,7 @@ export function CoverCloud({
   }
 
   return (
-    <div ref={frameRef} className="relative h-full min-h-[22rem] w-full overflow-hidden">
+    <div ref={frameRef} className="cover-cloud">
       {nodes.map((node) => {
         const active = hoveredId === node.id;
         const dimmed = hoveredId !== null && !active;
@@ -185,15 +186,14 @@ export function CoverCloud({
                 beginHover(node);
               }
             }}
-            className="absolute overflow-hidden rounded-md border border-white/10 bg-card p-0 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+            className="cover-cloud__node"
             style={{
               left: (node.x ?? 0) - displayR,
               top: (node.y ?? 0) - displayR,
               width: displayR * 2,
               height: displayR * 2,
               opacity: dimmed ? 0.22 : 1,
-              zIndex: active ? 20 : 1,
-              transition: "opacity 160ms linear",
+              zIndex: active ? "var(--z-dropdown)" : "var(--z-base)",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -201,7 +201,7 @@ export function CoverCloud({
               alt=""
               src={node.coverUrl}
               draggable={false}
-              className="size-full object-cover"
+              className="cover-cloud__img"
             />
           </button>
         );

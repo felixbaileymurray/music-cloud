@@ -3,19 +3,21 @@
 import { useMemo, useState } from "react";
 import { CoverCloud } from "@/components/cover-cloud";
 import { HistoryIntake } from "@/components/history-intake";
-import { Button } from "@/components/ui/button";
+import { UploadModal } from "@/components/upload-modal";
 import { Slider } from "@/components/ui/slider";
 import { cacheKey } from "@/lib/normalize";
 import { idbGet, idbSet } from "@/lib/idb-cache";
 import { unlockAudio } from "@/lib/snippet-player";
 import type { AlbumListen, ParseResult, PreviewHit } from "@/lib/types";
+import "@/components/spa.css";
 
-type Phase = "intake" | "resolve" | "cloud" | "empty-match";
+type Phase = "idle" | "resolve" | "cloud" | "empty-match";
 
 const DEFAULT_CLOUD = 40;
 
 export function CloudApp() {
-  const [phase, setPhase] = useState<Phase>("intake");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [uploadOpen, setUploadOpen] = useState(true);
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [resolved, setResolved] = useState<PreviewHit[]>([]);
   const [progress, setProgress] = useState({ done: 0, total: 0, kept: 0 });
@@ -28,8 +30,11 @@ export function CloudApp() {
     [cloudSize, resolved]
   );
 
+  const canDismissUpload = phase === "cloud" || phase === "empty-match";
+
   async function startResolve(result: ParseResult) {
     setParsed(result);
+    setUploadOpen(false);
     setPhase("resolve");
     setResolveError(null);
     setProgress({ done: 0, total: result.listens.length, kept: 0 });
@@ -63,7 +68,8 @@ export function CloudApp() {
       setPhase("cloud");
     } catch {
       setResolveError("Lookup failed partway through. Try again in a moment.");
-      setPhase("intake");
+      setPhase("idle");
+      setUploadOpen(true);
     }
   }
 
@@ -72,116 +78,159 @@ export function CloudApp() {
     setAudioUnlocked(ok);
   }
 
-  if (phase === "intake") {
-    return (
-      <div className="flex flex-1 flex-col">
-        {resolveError ? (
-          <p className="mx-auto mt-6 max-w-xl px-4 text-sm text-destructive">
-            {resolveError}
-          </p>
-        ) : null}
-        <HistoryIntake onParsed={(result) => void startResolve(result)} />
-      </div>
-    );
+  function openUpload() {
+    setResolveError(null);
+    setUploadOpen(true);
   }
 
-  if (phase === "resolve" && parsed) {
-    const pct = parsed.listens.length
-      ? Math.round((progress.done / parsed.listens.length) * 100)
-      : 0;
-    return (
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-4">
-        <h1 className="font-heading text-2xl">Fetching covers and snippets</h1>
-        <p className="text-sm text-muted-foreground">
-          iTunes first, Deezer if there is no match. Albums without audio never
-          enter the cloud.
-        </p>
-        <div className="h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {progress.done} / {progress.total} looked up · {progress.kept} with
-          audio
-        </p>
-      </div>
-    );
-  }
-
-  if (phase === "empty-match") {
-    return (
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-4">
-        <h1 className="font-heading text-2xl">No snippets matched</h1>
-        <p className="text-sm text-muted-foreground">
-          Every album was dropped. A tighter album + artist list matches more
-          often. Nothing is shown without audio.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setParsed(null);
-            setResolved([]);
-            setPhase("intake");
-          }}
-        >
-          Try another list
-        </Button>
-      </div>
-    );
+  function closeUpload() {
+    if (!canDismissUpload) return;
+    setUploadOpen(false);
   }
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="z-30 flex flex-col gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur-md md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
-            Music Cloud
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {visible.length} of {resolved.length} matched albums
-            {parsed?.skippedRows
-              ? ` · ${parsed.skippedRows} rows skipped (no album + artist)`
-              : ""}
+    <div className="spa-shell">
+      <aside className="spa-panel" aria-label="Cloud controls">
+        <div className="spa-panel__meta">
+          <p className="spa-panel__brand">Music Cloud</p>
+          <p className="spa-panel__status">
+            {phase === "cloud"
+              ? `${visible.length} of ${resolved.length} matched albums${
+                  parsed?.skippedRows
+                    ? ` · ${parsed.skippedRows} rows skipped (no album + artist)`
+                    : ""
+                }`
+              : phase === "resolve"
+                ? "Looking up covers and snippets…"
+                : phase === "empty-match"
+                  ? "No snippets matched"
+                  : "Upload a listening history to build the cloud"}
           </p>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1 md:max-w-sm">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Cloud size</span>
-            <span>{visible.length}</span>
-          </div>
-          <Slider
-            min={1}
-            max={resolved.length}
-            value={[Math.min(cloudSize, resolved.length)]}
-            onValueChange={(value) => {
-              const next = Array.isArray(value) ? value[0] : value;
-              if (typeof next === "number") setCloudSize(next);
-            }}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            setParsed(null);
-            setResolved([]);
-            setPhase("intake");
-          }}
-        >
-          New list
-        </Button>
-      </header>
 
-      <div className="relative min-h-0 flex-1" onPointerDown={() => void enableAudio()}>
-        {!audioUnlocked ? (
-          <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-4">
-            <p className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground">
-              Click or tap once to enable snippets
+        {phase === "cloud" ? (
+          <div className="spa-panel__controls">
+            <div className="spa-panel__controls-row">
+              <span>Cloud size</span>
+              <span>{visible.length}</span>
+            </div>
+            <Slider
+              min={1}
+              max={resolved.length}
+              value={[Math.min(cloudSize, resolved.length)]}
+              onValueChange={(value) => {
+                const next = Array.isArray(value) ? value[0] : value;
+                if (typeof next === "number") setCloudSize(next);
+              }}
+            />
+          </div>
+        ) : null}
+
+        <div className="spa-panel__actions">
+          {(phase === "cloud" || phase === "empty-match") && !uploadOpen ? (
+            <button type="button" className="spa-button spa-button--accent" onClick={openUpload}>
+              Upload list
+            </button>
+          ) : null}
+        </div>
+      </aside>
+
+      <div className="spa-main">
+        {resolveError && !uploadOpen ? (
+          <div className="spa-status">
+            <p className="spa-error">{resolveError}</p>
+            <button type="button" className="spa-button spa-button--accent" onClick={openUpload}>
+              Try again
+            </button>
+          </div>
+        ) : null}
+
+        {phase === "idle" && !resolveError ? (
+          <div className="spa-empty">
+            <h1 className="spa-empty__title">Cover art cloud</h1>
+            <p className="spa-empty__body">
+              Open upload to drop a Spotify export, CSV, or pasted album list.
+              Matched albums appear here with hover snippets.
+            </p>
+            {!uploadOpen ? (
+              <button type="button" className="spa-button spa-button--accent" onClick={openUpload}>
+                Upload list
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {phase === "resolve" && parsed ? (
+          <div className="spa-status">
+            <h1 className="spa-status__title">Fetching covers and snippets</h1>
+            <p className="spa-status__body">
+              iTunes first, Deezer if there is no match. Albums without audio never
+              enter the cloud.
+            </p>
+            <div
+              className="spa-progress"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={
+                parsed.listens.length
+                  ? Math.round((progress.done / parsed.listens.length) * 100)
+                  : 0
+              }
+            >
+              <div
+                className="spa-progress__bar"
+                style={{
+                  width: `${
+                    parsed.listens.length
+                      ? Math.round((progress.done / parsed.listens.length) * 100)
+                      : 0
+                  }%`,
+                }}
+              />
+            </div>
+            <p className="spa-status__body">
+              {progress.done} / {progress.total} looked up · {progress.kept} with
+              audio
             </p>
           </div>
         ) : null}
-        <CoverCloud albums={visible} audioUnlocked={audioUnlocked} />
+
+        {phase === "empty-match" ? (
+          <div className="spa-status">
+            <h1 className="spa-status__title">No snippets matched</h1>
+            <p className="spa-status__body">
+              Every album was dropped. A tighter album + artist list matches more
+              often. Nothing is shown without audio.
+            </p>
+            {!uploadOpen ? (
+              <button type="button" className="spa-button" onClick={openUpload}>
+                Try another list
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {phase === "cloud" ? (
+          <div className="spa-cloud-stage" onPointerDown={() => void enableAudio()}>
+            {!audioUnlocked ? (
+              <div className="spa-hint">
+                <p className="spa-hint__text">Click or tap once to enable snippets</p>
+              </div>
+            ) : null}
+            <CoverCloud albums={visible} audioUnlocked={audioUnlocked} />
+          </div>
+        ) : null}
       </div>
+
+      <UploadModal
+        open={uploadOpen}
+        dismissible={canDismissUpload}
+        onClose={closeUpload}
+        title="Upload listening history"
+      >
+        <HistoryIntake onParsed={(result) => void startResolve(result)} />
+      </UploadModal>
     </div>
   );
 }
@@ -189,7 +238,6 @@ export function CloudApp() {
 async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
   const key = cacheKey(listen.album, listen.artist);
   const cached = await idbGet(key);
-  if (cached === null) return null;
   if (cached) {
     return { ...cached, listenCount: listen.listenCount };
   }
@@ -201,7 +249,6 @@ async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
   });
 
   if (response.status === 404) {
-    await idbSet(key, null);
     return null;
   }
   if (!response.ok) {

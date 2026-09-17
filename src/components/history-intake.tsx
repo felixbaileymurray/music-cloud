@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { mergeParses, parseHistoryText } from "@/lib/parse-history";
 import type { ParseResult } from "@/lib/types";
 
@@ -69,15 +68,10 @@ export function HistoryIntake({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-5 px-4 py-10">
-      <div className="space-y-2">
-        <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
-          Music Cloud
-        </p>
-        <h1 className="font-heading text-3xl text-balance md:text-4xl">
-          Cover art cloud from a listening history.
-        </h1>
-        <p className="text-sm leading-6 text-muted-foreground md:text-base">
+    <div className="history-intake">
+      <div className="history-intake__intro">
+        <p className="history-intake__eyebrow">Music Cloud</p>
+        <p className="history-intake__lede">
           Drop a list of albums and artists. Matches get a cover and a 30-second
           snippet. Hover plays; unmatched albums are dropped before the cloud
           appears.
@@ -90,60 +84,67 @@ export function HistoryIntake({
           event.preventDefault();
           if (event.dataTransfer.files.length) void readFiles(event.dataTransfer.files);
         }}
-        className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/60 px-4 py-10 text-center"
+        className="history-intake__drop"
       >
         <input
           ref={fileRef}
           type="file"
           accept=".json,.csv,.txt,application/json,text/csv,text/plain"
           multiple
-          className="sr-only"
+          className="history-intake__sr-only"
           onChange={(event) => {
             if (event.target.files) void readFiles(event.target.files);
           }}
         />
-        <span className="text-sm font-medium">Drop Spotify JSON, CSV, or text</span>
-        <span className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+        <span className="history-intake__drop-title">
+          Drop Spotify JSON, CSV, or text
+        </span>
+        <span className="history-intake__drop-hint">
           Spotify extended streaming history works. CSV needs album and artist
           columns. Text is one <code>Album - Artist</code> line each.
         </span>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          className="mt-4"
+          className="spa-button"
           disabled={busy}
           onClick={() => fileRef.current?.click()}
         >
           Choose files
-        </Button>
+        </button>
       </label>
 
-      <div className="space-y-2">
-        <label htmlFor="paste" className="text-sm font-medium">
+      <div className="history-intake__paste">
+        <label htmlFor="paste" className="history-intake__label">
           Or paste a list
         </label>
         <textarea
           id="paste"
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder={'OK Computer - Radiohead\nBlue Train - John Coltrane'}
-          className="min-h-32 w-full rounded-xl border border-input bg-input/30 px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          placeholder={"OK Computer - Radiohead\nBlue Train - John Coltrane"}
+          className="history-intake__textarea"
         />
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" disabled={busy || !text.trim()} onClick={submitPaste}>
+        <div className="history-intake__actions">
+          <button
+            type="button"
+            className="spa-button spa-button--accent"
+            disabled={busy || !text.trim()}
+            onClick={submitPaste}
+          >
             Build from paste
-          </Button>
-          <Button type="button" variant="ghost" disabled={busy} onClick={() => void loadExample()}>
+          </button>
+          <button
+            type="button"
+            className="spa-button spa-button--ghost"
+            disabled={busy}
+            onClick={() => void loadExample()}
+          >
             Use example list
-          </Button>
+          </button>
         </div>
       </div>
 
-      {error ? (
-        <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="spa-error">{error}</p> : null}
     </div>
   );
 }
