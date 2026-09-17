@@ -29,6 +29,8 @@ type CloudNode = PreviewHit & {
 
 const SWELL = 1.18;
 const MIN_RADIUS = 22;
+/** Keep covers inset from the stage so the cloud never kisses the frame. */
+const BOUNDARY_INSET = 40;
 
 export type CloudPhysics = {
   centerStrengthBase: number;
@@ -40,12 +42,12 @@ export type CloudPhysics = {
 };
 
 export const DEFAULT_CLOUD_PHYSICS: CloudPhysics = {
-  centerStrengthBase: 0.028,
-  centerStrengthMass: 0.16,
-  chargeStrength: -14,
-  alphaDecay: 0.03,
-  collideIterations: 4,
-  boundaryStrength: 0.9,
+  centerStrengthBase: 0.02,
+  centerStrengthMass: 0.3,
+  chargeStrength: -10,
+  alphaDecay: 0.08,
+  collideIterations: 6,
+  boundaryStrength: 1,
 };
 
 /**
@@ -93,7 +95,7 @@ function forceBounds(
   const force = (alpha: number) => {
     for (const node of nodes) {
       const swell = getSwellId() === node.id ? SWELL : 1;
-      const r = node.r * swell;
+      const r = node.r * swell + BOUNDARY_INSET;
       const minX = r;
       const maxX = Math.max(r, width - r);
       const minY = r;
@@ -125,7 +127,7 @@ function clampNodeToBounds(
   hoveredId: string | null
 ) {
   const swell = hoveredId === node.id ? SWELL : 1;
-  const r = node.r * swell;
+  const r = node.r * swell + BOUNDARY_INSET;
   const maxX = Math.max(r, width - r);
   const maxY = Math.max(r, height - r);
   node.x = Math.max(r, Math.min(maxX, node.x ?? r));
