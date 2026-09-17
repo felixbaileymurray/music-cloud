@@ -1,0 +1,19 @@
+/*
+ * App-local layout tokens only.
+ * Colors, typography, spacing, radius, shadows, and focus come from Astryx
+ * (@astryxdesign/theme-neutral). Do not redefine --color-* here.
+ */
+
+:root {
+  --inset-page: 20px;
+  --panel-width: 16rem;
+  --cover-frame: 5px;
+
+  /* Overlay stacking for the remaining custom cloud shell */
+  --z-base: 0;
+  --z-dropdown: 20;
+  --z-sticky: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+}

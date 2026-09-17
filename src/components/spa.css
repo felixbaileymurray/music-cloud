@@ -1,0 +1,122 @@
+/* SPA shell + cover cloud — Astryx tokens + app-local layout tokens. */
+
+.spa-shell {
+  height: 100svh;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: var(--inset-page);
+  background: var(--color-background-surface);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-body);
+}
+
+.spa-shell > .astryx-layout {
+  height: 100%;
+  min-height: 0;
+}
+
+/*
+ * Layout's middle row (content + end panel) does not inherit gap from the
+ * outer layout node. Keep the same inset between canvas and sidebar cards.
+ */
+.spa-shell .astryx-layout-panel {
+  margin-inline-start: var(--inset-page);
+}
+
+.spa-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-container);
+  background: var(--color-background-body);
+  color: var(--color-text-primary);
+}
+
+.spa-cloud-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.spa-empty,
+.spa-status {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spacing-4);
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: var(--spacing-4);
+}
+
+.spa-hint {
+  position: absolute;
+  inset-inline: 0;
+  top: var(--spacing-3);
+  z-index: var(--z-dropdown);
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--spacing-4);
+  pointer-events: none;
+}
+
+.spa-hint > * {
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-background-surface);
+}
+
+@keyframes album-preview-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.album-preview-icon {
+  display: inline-flex;
+  animation: album-preview-pulse 1s ease-in-out infinite;
+}
+
+/* —— Cover cloud token surfaces —— */
+
+.cover-cloud {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cover-cloud__node {
+  position: absolute;
+  padding: 0;
+  /* overflow must stay visible so the frame shadow isn’t clipped */
+  overflow: visible;
+  border: none;
+  border-radius: var(--radius-none);
+  background: var(--color-background-body);
+  box-shadow: 0 0 0 var(--cover-frame) var(--color-background-body);
+  cursor: pointer;
+}
+
+.cover-cloud__node:focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style)
+    var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+
+.cover-cloud__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-none);
+}

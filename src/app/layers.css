@@ -1,0 +1,6 @@
+/*
+ * Cascade layer order for Astryx + Tailwind coexistence.
+ * Must live in its own file and be imported first — Next/webpack hoists
+ * @import above sibling rules, which would otherwise bury this declaration.
+ */
+@layer reset, theme, base, astryx-base, astryx-theme, components, utilities;

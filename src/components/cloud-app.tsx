@@ -1,41 +1,240 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CoverCloud } from "@/components/cover-cloud";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Button } from "@astryxdesign/core/Button";
+import { Card } from "@astryxdesign/core/Card";
+import { Collapsible } from "@astryxdesign/core/Collapsible";
+import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Heading } from "@astryxdesign/core/Heading";
+import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
+import { ProgressBar } from "@astryxdesign/core/ProgressBar";
+import { Slider } from "@astryxdesign/core/Slider";
+import { Text } from "@astryxdesign/core/Text";
+import { VStack } from "@astryxdesign/core/VStack";
+import { AlbumInfoCard } from "@/components/album-info-card";
+import {
+  CoverCloud,
+  DEFAULT_CLOUD_PHYSICS,
+  type CloudPhysics,
+} from "@/components/cover-cloud";
 import { HistoryIntake } from "@/components/history-intake";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { UploadModal } from "@/components/upload-modal";
 import { cacheKey } from "@/lib/normalize";
 import { idbGet, idbSet } from "@/lib/idb-cache";
 import { unlockAudio } from "@/lib/snippet-player";
-import type { AlbumListen, ParseResult, PreviewHit } from "@/lib/types";
+import type {
+  AlbumDetails,
+  AlbumListen,
+  ClipRef,
+  ParseResult,
+  PreviewHit,
+} from "@/lib/types";
+import "@/components/spa.css";
 
-type Phase = "intake" | "resolve" | "cloud" | "empty-match";
+type Phase = "idle" | "resolve" | "cloud" | "empty-match";
 
 const DEFAULT_CLOUD = 40;
+const DEFAULT_SIZE_RATIO = 4;
+const MIN_SIZE_RATIO = 1;
+const MAX_SIZE_RATIO = 6;
+const DEFAULT_COLLISION_PAD = 10;
+const DEFAULT_COVER_FRAME = 5;
 
 export function CloudApp() {
-  const [phase, setPhase] = useState<Phase>("intake");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [resolved, setResolved] = useState<PreviewHit[]>([]);
-  const [progress, setProgress] = useState({ done: 0, total: 0, kept: 0 });
+  const [progress, setProgress] = useState({
+    done: 0,
+    total: 0,
+    found: 0,
+    dropped: 0,
+  });
   const [cloudSize, setCloudSize] = useState(DEFAULT_CLOUD);
+  const [sizeRatio, setSizeRatio] = useState(DEFAULT_SIZE_RATIO);
+  const [collisionPad, setCollisionPad] = useState(DEFAULT_COLLISION_PAD);
+  const [coverFrame, setCoverFrame] = useState(DEFAULT_COVER_FRAME);
+  const [centerStrengthBase, setCenterStrengthBase] = useState(
+    DEFAULT_CLOUD_PHYSICS.centerStrengthBase
+  );
+  const [centerStrengthMass, setCenterStrengthMass] = useState(
+    DEFAULT_CLOUD_PHYSICS.centerStrengthMass
+  );
+  const [chargeStrength, setChargeStrength] = useState(
+    DEFAULT_CLOUD_PHYSICS.chargeStrength
+  );
+  const [alphaDecay, setAlphaDecay] = useState(DEFAULT_CLOUD_PHYSICS.alphaDecay);
+  const [collideIterations, setCollideIterations] = useState(
+    DEFAULT_CLOUD_PHYSICS.collideIterations
+  );
+  const [boundaryStrength, setBoundaryStrength] = useState(
+    DEFAULT_CLOUD_PHYSICS.boundaryStrength
+  );
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<PreviewHit | null>(null);
+  const [locked, setLocked] = useState<PreviewHit | null>(null);
+  const [albumDetails, setAlbumDetails] = useState<AlbumDetails | null>(null);
+  const [albumLoading, setAlbumLoading] = useState(false);
+  const [albumError, setAlbumError] = useState<string | null>(null);
+  const [hoverPreview, setHoverPreview] = useState<{
+    album: string;
+    artist: string;
+    clip: ClipRef;
+  } | null>(null);
+  const [exploreResetToken, setExploreResetToken] = useState(0);
+  const albumDetailsCacheRef = useRef(new Map<string, AlbumDetails>());
+
+  const focused = locked ?? hovered;
 
   const visible = useMemo(
     () => resolved.slice(0, Math.max(1, Math.min(cloudSize, resolved.length))),
     [cloudSize, resolved]
   );
 
+  const physics = useMemo<CloudPhysics>(
+    () => ({
+      centerStrengthBase,
+      centerStrengthMass,
+      chargeStrength,
+      alphaDecay,
+      collideIterations,
+      boundaryStrength,
+    }),
+    [
+      centerStrengthBase,
+      centerStrengthMass,
+      chargeStrength,
+      alphaDecay,
+      collideIterations,
+      boundaryStrength,
+    ]
+  );
+
+  const canDismissUpload = phase !== "resolve";
+  const hasCloud = phase === "cloud";
+  const progressPercent = parsed?.listens.length
+    ? Math.round((progress.done / parsed.listens.length) * 100)
+    : 0;
+
+  useEffect(() => {
+    if (!focused) {
+      setAlbumDetails(null);
+      setAlbumError(null);
+      setAlbumLoading(false);
+      return;
+    }
+
+    const album = focused.album;
+    const artist = focused.artist;
+    const key = cacheKey(album, artist);
+    const cached = albumDetailsCacheRef.current.get(key);
+    if (cached) {
+      setAlbumDetails(cached);
+      setAlbumError(null);
+      setAlbumLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDetails() {
+      setAlbumLoading(true);
+      setAlbumError(null);
+      try {
+        const response = await fetch("/api/album", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ album, artist }),
+        });
+        if (cancelled) return;
+        if (response.status === 404) {
+          setAlbumDetails(null);
+          setAlbumError("No album details found for this cover.");
+          return;
+        }
+        if (!response.ok) {
+          setAlbumDetails(null);
+          setAlbumError("Could not load album details. Try again.");
+          return;
+        }
+        const data = (await response.json()) as AlbumDetails;
+        albumDetailsCacheRef.current.set(key, data);
+        if (!cancelled) setAlbumDetails(data);
+      } catch {
+        if (!cancelled) {
+          setAlbumDetails(null);
+          setAlbumError("Could not load album details. Try again.");
+        }
+      } finally {
+        if (!cancelled) setAlbumLoading(false);
+      }
+    }
+
+    void loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [focused]);
+
+  function lockAlbum(album: PreviewHit) {
+    setLocked((current) => {
+      if (
+        current &&
+        current.album === album.album &&
+        current.artist === album.artist
+      ) {
+        return null;
+      }
+      return album;
+    });
+  }
+
+  function resetExplore() {
+    setLocked(null);
+    setHovered(null);
+    setHoverPreview(null);
+    setExploreResetToken((token) => token + 1);
+  }
+
+  function onCanvasPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    void enableAudio();
+    if (!locked) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest(".cover-cloud__node")) {
+      return;
+    }
+    resetExplore();
+  }
+
   async function startResolve(result: ParseResult) {
     setParsed(result);
+    setUploadOpen(false);
     setPhase("resolve");
     setResolveError(null);
-    setProgress({ done: 0, total: result.listens.length, kept: 0 });
+    setHovered(null);
+    setLocked(null);
+    setHoverPreview(null);
+    setProgress({
+      done: 0,
+      total: result.listens.length,
+      found: 0,
+      dropped: 0,
+    });
 
     const kept: PreviewHit[] = [];
     let done = 0;
+    let found = 0;
+    let dropped = 0;
     let cursor = 0;
     const listens = result.listens;
 
@@ -46,8 +245,13 @@ export function CloudApp() {
         const listen = listens[index];
         const hit = await resolveOne(listen);
         done += 1;
-        if (hit) kept.push(hit);
-        setProgress({ done, total: listens.length, kept: kept.length });
+        if (hit) {
+          kept.push(hit);
+          found += 1;
+        } else {
+          dropped += 1;
+        }
+        setProgress({ done, total: listens.length, found, dropped });
       }
     }
 
@@ -55,6 +259,12 @@ export function CloudApp() {
       await Promise.all([worker(), worker()]);
       kept.sort((a, b) => b.listenCount - a.listenCount);
       setResolved(kept);
+      setProgress({
+        done: listens.length,
+        total: listens.length,
+        found: kept.length,
+        dropped: listens.length - kept.length,
+      });
       if (kept.length === 0) {
         setPhase("empty-match");
         return;
@@ -63,7 +273,8 @@ export function CloudApp() {
       setPhase("cloud");
     } catch {
       setResolveError("Lookup failed partway through. Try again in a moment.");
-      setPhase("intake");
+      setPhase("idle");
+      setUploadOpen(true);
     }
   }
 
@@ -72,124 +283,350 @@ export function CloudApp() {
     setAudioUnlocked(ok);
   }
 
-  if (phase === "intake") {
-    return (
-      <div className="flex flex-1 flex-col">
-        {resolveError ? (
-          <p className="mx-auto mt-6 max-w-xl px-4 text-sm text-destructive">
-            {resolveError}
-          </p>
-        ) : null}
-        <HistoryIntake onParsed={(result) => void startResolve(result)} />
-      </div>
-    );
+  function openCreate() {
+    setResolveError(null);
+    setUploadOpen(true);
   }
 
-  if (phase === "resolve" && parsed) {
-    const pct = parsed.listens.length
-      ? Math.round((progress.done / parsed.listens.length) * 100)
-      : 0;
-    return (
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-4">
-        <h1 className="font-heading text-2xl">Fetching covers and snippets</h1>
-        <p className="text-sm text-muted-foreground">
-          iTunes first, Deezer if there is no match. Albums without audio never
-          enter the cloud.
-        </p>
-        <div className="h-2 overflow-hidden rounded-full bg-muted">
-          <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {progress.done} / {progress.total} looked up · {progress.kept} with
-          audio
-        </p>
-      </div>
-    );
+  function closeUpload() {
+    if (!canDismissUpload) return;
+    setUploadOpen(false);
   }
 
-  if (phase === "empty-match") {
-    return (
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-4 px-4">
-        <h1 className="font-heading text-2xl">No snippets matched</h1>
-        <p className="text-sm text-muted-foreground">
-          Every album was dropped. A tighter album + artist list matches more
-          often. Nothing is shown without audio.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setParsed(null);
-            setResolved([]);
-            setPhase("intake");
-          }}
-        >
-          Try another list
-        </Button>
-      </div>
-    );
-  }
+  const focusedClip =
+    focused &&
+    hoverPreview &&
+    focused.album === hoverPreview.album &&
+    focused.artist === hoverPreview.artist
+      ? hoverPreview.clip
+      : null;
+
+  const resolveStats = `${progress.total} processed · ${progress.found} found · ${progress.dropped} dropped`;
+  const statusCopy =
+    phase === "cloud"
+      ? `${visible.length} showing · ${resolveStats}${
+          parsed?.skippedRows
+            ? ` · ${parsed.skippedRows} rows skipped (no album + artist)`
+            : ""
+        }`
+      : phase === "resolve"
+        ? "Looking up covers and snippets…"
+        : phase === "empty-match"
+          ? `No snippets matched · ${resolveStats}`
+          : "Create a cloud from your listening history";
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="z-30 flex flex-col gap-3 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur-md md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
-            Music Cloud
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {visible.length} of {resolved.length} matched albums
-            {parsed?.skippedRows
-              ? ` · ${parsed.skippedRows} rows skipped (no album + artist)`
-              : ""}
-          </p>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-1 md:max-w-sm">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Cloud size</span>
-            <span>{visible.length}</span>
-          </div>
-          <Slider
-            min={1}
-            max={resolved.length}
-            value={[Math.min(cloudSize, resolved.length)]}
-            onValueChange={(value) => {
-              const next = Array.isArray(value) ? value[0] : value;
-              if (typeof next === "number") setCloudSize(next);
-            }}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            setParsed(null);
-            setResolved([]);
-            setPhase("intake");
-          }}
-        >
-          New list
-        </Button>
-      </header>
+    <div
+      className="spa-shell"
+      style={
+        {
+          "--cover-frame": `${coverFrame}px`,
+        } as CSSProperties
+      }
+    >
+      <Layout
+        height="fill"
+        padding={0}
+        end={
+          <LayoutPanel
+            width="var(--panel-width)"
+            padding={0}
+            isScrollable
+            label="Cloud sidebar"
+          >
+            <VStack gap={4} width="100%" paddingBlock={0} hAlign="center">
+              <Card width="100%" padding={4}>
+                <VStack gap={4} width="100%">
+                  <VStack gap={1} width="100%">
+                    <Text type="supporting">Music Cloud</Text>
+                    <Text type="body" color="secondary">
+                      {statusCopy}
+                    </Text>
+                  </VStack>
 
-      <div className="relative min-h-0 flex-1" onPointerDown={() => void enableAudio()}>
-        {!audioUnlocked ? (
-          <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-4">
-            <p className="rounded-full border border-border bg-card/90 px-3 py-1 text-xs text-muted-foreground">
-              Click or tap once to enable snippets
-            </p>
+                  {phase === "cloud" ? (
+                    <VStack gap={4} width="100%">
+                      <Slider
+                        label="Cloud size"
+                        min={1}
+                        max={resolved.length}
+                        step={1}
+                        value={Math.min(cloudSize, resolved.length)}
+                        onChange={setCloudSize}
+                        formatValue={(value) => `${value}`}
+                        valueDisplay="text"
+                        width="100%"
+                      />
+
+                      <Collapsible trigger="Customise" defaultIsOpen={false}>
+                        <VStack gap={3} width="100%" paddingBlockStart={3}>
+                          <Knob
+                            label="Size ratio"
+                            display={`${sizeRatio.toFixed(1)}×`}
+                            min={MIN_SIZE_RATIO}
+                            max={MAX_SIZE_RATIO}
+                            step={0.1}
+                            value={sizeRatio}
+                            onChange={setSizeRatio}
+                          />
+                          <Knob
+                            label="Collision pad"
+                            display={`${collisionPad}px`}
+                            min={0}
+                            max={24}
+                            step={1}
+                            value={collisionPad}
+                            onChange={setCollisionPad}
+                          />
+                          <Knob
+                            label="Frame width"
+                            display={`${coverFrame}px`}
+                            min={0}
+                            max={8}
+                            step={1}
+                            value={coverFrame}
+                            onChange={setCoverFrame}
+                          />
+                          <Knob
+                            label="Centre pull"
+                            display={centerStrengthBase.toFixed(3)}
+                            min={0}
+                            max={0.12}
+                            step={0.002}
+                            value={centerStrengthBase}
+                            onChange={setCenterStrengthBase}
+                          />
+                          <Knob
+                            label="Mass pull"
+                            display={centerStrengthMass.toFixed(3)}
+                            min={0}
+                            max={0.4}
+                            step={0.005}
+                            value={centerStrengthMass}
+                            onChange={setCenterStrengthMass}
+                          />
+                          <Knob
+                            label="Charge"
+                            display={chargeStrength.toFixed(0)}
+                            min={-40}
+                            max={0}
+                            step={1}
+                            value={chargeStrength}
+                            onChange={setChargeStrength}
+                          />
+                          <Knob
+                            label="Settle speed"
+                            display={alphaDecay.toFixed(3)}
+                            min={0.005}
+                            max={0.1}
+                            step={0.001}
+                            value={alphaDecay}
+                            onChange={setAlphaDecay}
+                          />
+                          <Knob
+                            label="Collide passes"
+                            display={`${collideIterations}`}
+                            min={1}
+                            max={8}
+                            step={1}
+                            value={collideIterations}
+                            onChange={setCollideIterations}
+                          />
+                          <Knob
+                            label="Boundary"
+                            display={boundaryStrength.toFixed(2)}
+                            min={0}
+                            max={1.5}
+                            step={0.05}
+                            value={boundaryStrength}
+                            onChange={setBoundaryStrength}
+                          />
+                        </VStack>
+                      </Collapsible>
+                    </VStack>
+                  ) : null}
+
+                  <VStack gap={2} width="100%">
+                    <Button
+                      label="Create"
+                      variant="primary"
+                      onClick={openCreate}
+                      width="100%"
+                    />
+                    <Button label="Share" isDisabled={!hasCloud} width="100%" />
+                    <Button label="Save" isDisabled={!hasCloud} width="100%" />
+                  </VStack>
+                </VStack>
+              </Card>
+
+              <Card width="100%" padding={4}>
+                <AlbumInfoCard
+                  details={albumDetails}
+                  listenCount={focused?.listenCount}
+                  isLoading={albumLoading}
+                  error={albumError}
+                  activeClip={focusedClip}
+                  isLocked={locked != null}
+                />
+              </Card>
+            </VStack>
+          </LayoutPanel>
+        }
+      >
+        <LayoutContent padding={0} isScrollable={false} label="Cloud canvas">
+          <div className="spa-canvas">
+            {resolveError && !uploadOpen ? (
+              <div className="spa-status">
+                <Banner
+                  status="error"
+                  title={resolveError}
+                  collapsible={false}
+                  endContent={
+                    <Button
+                      label="Try again"
+                      variant="primary"
+                      onClick={openCreate}
+                    />
+                  }
+                />
+              </div>
+            ) : null}
+
+            {phase === "idle" && !resolveError ? (
+              <div className="spa-empty">
+                <EmptyState
+                  title="Cover art cloud"
+                  description="Create a cloud from a Spotify export, CSV, or pasted album list. Matched albums appear here with hover snippets."
+                  headingLevel={1}
+                  actions={
+                    !uploadOpen ? (
+                      <Button
+                        label="Create"
+                        variant="primary"
+                        onClick={openCreate}
+                      />
+                    ) : undefined
+                  }
+                />
+              </div>
+            ) : null}
+
+            {phase === "resolve" && parsed ? (
+              <div className="spa-status">
+                <VStack gap={4} width="100%">
+                  <Heading level={1}>Fetching covers and snippets</Heading>
+                  <Text type="body" color="secondary">
+                    Deezer first (top tracks by popularity), iTunes if there is no
+                    match. Each preview is probed; albums without playable audio are
+                    dropped before the cloud renders.
+                  </Text>
+                  <ProgressBar
+                    label="Lookup progress"
+                    value={progressPercent}
+                    max={100}
+                    hasValueLabel
+                    formatValueLabel={() =>
+                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} dropped`
+                    }
+                  />
+                </VStack>
+              </div>
+            ) : null}
+
+            {phase === "empty-match" ? (
+              <div className="spa-empty">
+                <EmptyState
+                  title="No snippets matched"
+                  description="Every album was dropped. A tighter album + artist list matches more often. Nothing is shown without audio."
+                  headingLevel={1}
+                  actions={
+                    !uploadOpen ? (
+                      <Button label="Try another list" onClick={openCreate} />
+                    ) : undefined
+                  }
+                />
+              </div>
+            ) : null}
+
+            {phase === "cloud" ? (
+              <div
+                className="spa-cloud-stage"
+                onPointerDown={onCanvasPointerDown}
+              >
+                {!audioUnlocked ? (
+                  <div className="spa-hint">
+                    <Text type="supporting">
+                      Click or tap once to enable snippets
+                    </Text>
+                  </div>
+                ) : null}
+                <CoverCloud
+                  albums={visible}
+                  audioUnlocked={audioUnlocked}
+                  sizeRatio={sizeRatio}
+                  collisionPad={collisionPad}
+                  physics={physics}
+                  lockedId={
+                    locked ? `${locked.artist}::${locked.album}` : null
+                  }
+                  exploreResetToken={exploreResetToken}
+                  onHoverChange={setHovered}
+                  onLockToggle={lockAlbum}
+                  onPreviewChange={setHoverPreview}
+                />
+              </div>
+            ) : null}
           </div>
-        ) : null}
-        <CoverCloud albums={visible} audioUnlocked={audioUnlocked} />
-      </div>
+        </LayoutContent>
+      </Layout>
+
+      <UploadModal
+        open={uploadOpen}
+        dismissible={canDismissUpload}
+        onClose={closeUpload}
+        title="Create cloud"
+      >
+        <HistoryIntake onParsed={(result) => void startResolve(result)} />
+      </UploadModal>
     </div>
+  );
+}
+
+function Knob({
+  label,
+  display,
+  min,
+  max,
+  step,
+  value,
+  onChange,
+}: {
+  label: string;
+  display: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <Slider
+      label={label}
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={onChange}
+      formatValue={() => display}
+      valueDisplay="text"
+      width="100%"
+    />
   );
 }
 
 async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
   const key = cacheKey(listen.album, listen.artist);
   const cached = await idbGet(key);
-  if (cached === null) return null;
   if (cached) {
     return { ...cached, listenCount: listen.listenCount };
   }
@@ -201,7 +638,6 @@ async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
   });
 
   if (response.status === 404) {
-    await idbSet(key, null);
     return null;
   }
   if (!response.ok) {
@@ -210,16 +646,24 @@ async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
 
   const data = (await response.json()) as {
     coverUrl: string;
-    previews: string[];
+    clips: PreviewHit["clips"];
     album: string;
     artist: string;
   };
-  await idbSet(key, data);
+  if (!Array.isArray(data.clips) || data.clips.length === 0) {
+    return null;
+  }
+  const stored = {
+    coverUrl: data.coverUrl,
+    clips: data.clips,
+    album: data.album,
+    artist: data.artist,
+  };
+  await idbSet(key, stored);
   return {
+    ...stored,
     album: listen.album,
     artist: listen.artist,
     listenCount: listen.listenCount,
-    coverUrl: data.coverUrl,
-    previews: data.previews,
   };
 }
