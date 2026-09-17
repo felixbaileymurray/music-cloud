@@ -1,6 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Banner } from "@astryxdesign/core/Banner";
+import { Button } from "@astryxdesign/core/Button";
+import { FileInput } from "@astryxdesign/core/FileInput";
+import { HStack } from "@astryxdesign/core/HStack";
+import { Text } from "@astryxdesign/core/Text";
+import { TextArea } from "@astryxdesign/core/TextArea";
+import { VStack } from "@astryxdesign/core/VStack";
 import { mergeParses, parseHistoryText } from "@/lib/parse-history";
 import type { ParseResult } from "@/lib/types";
 
@@ -9,20 +16,25 @@ export function HistoryIntake({
 }: {
   onParsed: (result: ParseResult) => void;
 }) {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[] | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const parseGeneration = useRef(0);
 
   async function readFiles(fileList: FileList | File[]) {
-    const files = Array.from(fileList);
-    if (files.length === 0) return;
+    const nextFiles = Array.from(fileList);
+    if (nextFiles.length === 0) return;
+    const generation = ++parseGeneration.current;
     setBusy(true);
     setError(null);
     try {
       const parsed = await Promise.all(
-        files.map(async (file) => parseHistoryText(await file.text(), file.name))
+        nextFiles.map(async (file) =>
+          parseHistoryText(await file.text(), file.name)
+        )
       );
+      if (generation !== parseGeneration.current) return;
       const merged = mergeParses(parsed);
       if (merged.listens.length === 0) {
         setError(
@@ -33,9 +45,10 @@ export function HistoryIntake({
       }
       onParsed(merged);
     } catch {
+      if (generation !== parseGeneration.current) return;
       setError("Could not read those files.");
     } finally {
-      setBusy(false);
+      if (generation === parseGeneration.current) setBusy(false);
     }
   }
 
@@ -53,98 +66,84 @@ export function HistoryIntake({
   }
 
   async function loadExample() {
+    const generation = ++parseGeneration.current;
     setBusy(true);
     setError(null);
     try {
       const response = await fetch("/example-history.csv");
       if (!response.ok) throw new Error("missing example");
-      const parsed = parseHistoryText(await response.text(), "example-history.csv");
+      const parsed = parseHistoryText(
+        await response.text(),
+        "example-history.csv"
+      );
+      if (generation !== parseGeneration.current) return;
       onParsed(parsed);
     } catch {
+      if (generation !== parseGeneration.current) return;
       setError("Example list failed to load.");
     } finally {
-      setBusy(false);
+      if (generation === parseGeneration.current) setBusy(false);
     }
   }
 
   return (
-    <div className="history-intake">
-      <div className="history-intake__intro">
-        <p className="history-intake__eyebrow">Music Cloud</p>
-        <p className="history-intake__lede">
+    <VStack gap={5} width="100%">
+      <VStack gap={2}>
+        <Text type="supporting">Music Cloud</Text>
+        <Text type="body" color="secondary">
           Drop a list of albums and artists. Matches get a cover and a 30-second
           snippet. Hover plays; unmatched albums are dropped before the cloud
           appears.
-        </p>
-      </div>
+        </Text>
+      </VStack>
 
-      <label
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault();
-          if (event.dataTransfer.files.length) void readFiles(event.dataTransfer.files);
+      <FileInput
+        label="Listening history files"
+        mode="dropzone"
+        isMultiple
+        accept=".json,.csv,.txt,application/json,text/csv,text/plain"
+        value={files}
+        onChange={(next) => {
+          setFiles(Array.isArray(next) ? next : next ? [next] : null);
         }}
-        className="history-intake__drop"
-      >
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".json,.csv,.txt,application/json,text/csv,text/plain"
-          multiple
-          className="history-intake__sr-only"
-          onChange={(event) => {
-            if (event.target.files) void readFiles(event.target.files);
-          }}
-        />
-        <span className="history-intake__drop-title">
-          Drop Spotify JSON, CSV, or text
-        </span>
-        <span className="history-intake__drop-hint">
-          Spotify extended streaming history works. CSV needs album and artist
-          columns. Text is one <code>Album - Artist</code> line each.
-        </span>
-        <button
-          type="button"
-          className="spa-button"
-          disabled={busy}
-          onClick={() => fileRef.current?.click()}
-        >
-          Choose files
-        </button>
-      </label>
+        changeAction={async (next) => {
+          const list = Array.isArray(next) ? next : next ? [next] : [];
+          if (list.length) await readFiles(list);
+        }}
+        isLoading={busy}
+        description="Spotify extended streaming history works. CSV needs album and artist columns. Text is one Album - Artist line each."
+        placeholder="Drop Spotify JSON, CSV, or text"
+        width="100%"
+      />
 
-      <div className="history-intake__paste">
-        <label htmlFor="paste" className="history-intake__label">
-          Or paste a list
-        </label>
-        <textarea
-          id="paste"
+      <VStack gap={3} width="100%">
+        <TextArea
+          label="Or paste a list"
           value={text}
-          onChange={(event) => setText(event.target.value)}
+          onChange={setText}
           placeholder={"OK Computer - Radiohead\nBlue Train - John Coltrane"}
-          className="history-intake__textarea"
+          rows={5}
+          width="100%"
         />
-        <div className="history-intake__actions">
-          <button
-            type="button"
-            className="spa-button spa-button--accent"
-            disabled={busy || !text.trim()}
+        <HStack gap={2} wrap="wrap">
+          <Button
+            label="Build from paste"
+            variant="primary"
+            isDisabled={busy || !text.trim()}
             onClick={submitPaste}
-          >
-            Build from paste
-          </button>
-          <button
-            type="button"
-            className="spa-button spa-button--ghost"
-            disabled={busy}
+          />
+          <Button
+            label="Use example list"
+            variant="ghost"
+            isDisabled={busy}
             onClick={() => void loadExample()}
-          >
-            Use example list
-          </button>
-        </div>
-      </div>
+          />
+        </HStack>
+      </VStack>
 
-      {error ? <p className="spa-error">{error}</p> : null}
-    </div>
+      {error ? (
+        <Banner status="error" title={error} collapsible={false} />
+      ) : null}
+    </VStack>
   );
 }

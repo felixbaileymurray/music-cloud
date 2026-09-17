@@ -24,46 +24,147 @@ type CloudNode = PreviewHit & {
 };
 
 const SWELL = 1.18;
-const PAD = 6;
+const MIN_RADIUS = 22;
 
-function radiusFor(count: number, minCount: number, maxCount: number) {
-  const minR = 22;
-  const maxR = 58;
-  if (maxCount === minCount) return (minR + maxR) / 2;
+export type CloudPhysics = {
+  centerStrengthBase: number;
+  centerStrengthMass: number;
+  chargeStrength: number;
+  alphaDecay: number;
+  collideIterations: number;
+  boundaryStrength: number;
+};
+
+export const DEFAULT_CLOUD_PHYSICS: CloudPhysics = {
+  centerStrengthBase: 0.028,
+  centerStrengthMass: 0.16,
+  chargeStrength: -14,
+  alphaDecay: 0.03,
+  collideIterations: 4,
+  boundaryStrength: 0.9,
+};
+
+/**
+ * Prefer listen counts when they vary. Otherwise fall back to list rank so
+ * datasets without play counts still get a continuous size hierarchy.
+ */
+function sizeWeights(albums: PreviewHit[]): number[] {
+  const counts = albums.map((album) => album.listenCount);
+  const minCount = Math.min(...counts);
+  const maxCount = Math.max(...counts);
+  if (maxCount > minCount) return counts;
+  const n = albums.length;
+  return albums.map((_, index) => n - index);
+}
+
+function radiusFor(
+  weight: number,
+  minWeight: number,
+  maxWeight: number,
+  sizeRatio: number
+) {
+  const ratio = Math.max(1, sizeRatio);
+  const minR = MIN_RADIUS;
+  const maxR = MIN_RADIUS * ratio;
+  if (maxWeight === minWeight) return (minR + maxR) / 2;
   const t =
-    (Math.sqrt(count) - Math.sqrt(minCount)) /
-    (Math.sqrt(maxCount) - Math.sqrt(minCount));
+    (Math.sqrt(weight) - Math.sqrt(minWeight)) /
+    (Math.sqrt(maxWeight) - Math.sqrt(minWeight));
   return minR + t * (maxR - minR);
+}
+
+function massNorm(r: number, minR: number, maxR: number) {
+  if (maxR <= minR) return 0.5;
+  return (r - minR) / (maxR - minR);
+}
+
+/** Soft wall: nudge covers that would spill past the padded stage edges. */
+function forceBounds(
+  width: number,
+  height: number,
+  boundaryStrength: number,
+  getSwellId: () => string | null
+) {
+  let nodes: CloudNode[] = [];
+  const force = (alpha: number) => {
+    for (const node of nodes) {
+      const swell = getSwellId() === node.id ? SWELL : 1;
+      const r = node.r * swell;
+      const minX = r;
+      const maxX = Math.max(r, width - r);
+      const minY = r;
+      const maxY = Math.max(r, height - r);
+
+      if (node.x < minX) {
+        node.vx = (node.vx ?? 0) + (minX - node.x) * boundaryStrength * alpha;
+      } else if (node.x > maxX) {
+        node.vx = (node.vx ?? 0) + (maxX - node.x) * boundaryStrength * alpha;
+      }
+
+      if (node.y < minY) {
+        node.vy = (node.vy ?? 0) + (minY - node.y) * boundaryStrength * alpha;
+      } else if (node.y > maxY) {
+        node.vy = (node.vy ?? 0) + (maxY - node.y) * boundaryStrength * alpha;
+      }
+    }
+  };
+  force.initialize = (initNodes: CloudNode[]) => {
+    nodes = initNodes;
+  };
+  return force;
+}
+
+function clampNodeToBounds(
+  node: CloudNode,
+  width: number,
+  height: number,
+  hoveredId: string | null
+) {
+  const swell = hoveredId === node.id ? SWELL : 1;
+  const r = node.r * swell;
+  const maxX = Math.max(r, width - r);
+  const maxY = Math.max(r, height - r);
+  node.x = Math.max(r, Math.min(maxX, node.x ?? r));
+  node.y = Math.max(r, Math.min(maxY, node.y ?? r));
 }
 
 export function CoverCloud({
   albums,
   audioUnlocked,
+  sizeRatio = 4,
+  collisionPad = 10,
+  physics = DEFAULT_CLOUD_PHYSICS,
 }: {
   albums: PreviewHit[];
   audioUnlocked: boolean;
+  sizeRatio?: number;
+  collisionPad?: number;
+  physics?: CloudPhysics;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const simRef = useRef<Simulation<CloudNode, undefined> | null>(null);
   const cycleRef = useRef<Map<string, number>>(new Map());
   const hoverIdRef = useRef<string | null>(null);
+  const collisionPadRef = useRef(collisionPad);
   const [nodes, setNodes] = useState<CloudNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
 
+  collisionPadRef.current = collisionPad;
+
   const sized = useMemo(() => {
     if (albums.length === 0) return [];
-    const counts = albums.map((album) => album.listenCount);
-    const minCount = Math.min(...counts);
-    const maxCount = Math.max(...counts);
-    return albums.map((album) => ({
+    const weights = sizeWeights(albums);
+    const minWeight = Math.min(...weights);
+    const maxWeight = Math.max(...weights);
+    return albums.map((album, index) => ({
       ...album,
       id: `${album.artist}::${album.album}`,
-      r: radiusFor(album.listenCount, minCount, maxCount),
+      r: radiusFor(weights[index], minWeight, maxWeight, sizeRatio),
       x: size.width / 2,
       y: size.height / 2,
     }));
-  }, [albums, size.height, size.width]);
+  }, [albums, size.height, size.width, sizeRatio]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -83,35 +184,68 @@ export function CoverCloud({
   useEffect(() => {
     const cx = size.width / 2;
     const cy = size.height / 2;
+    const pad = collisionPad;
+    const {
+      centerStrengthBase,
+      centerStrengthMass,
+      chargeStrength,
+      alphaDecay,
+      collideIterations,
+      boundaryStrength,
+    } = physics;
+    const radii = sized.map((node) => node.r);
+    const minR = radii.length ? Math.min(...radii) : MIN_RADIUS;
+    const maxR = radii.length ? Math.max(...radii) : MIN_RADIUS;
+    const stage = Math.min(size.width, size.height);
+
+    // Seed by mass: heavy covers near the centre, lighter ones further out.
     const seeded: CloudNode[] = sized.map((node, index) => {
       const angle = (index / Math.max(sized.length, 1)) * Math.PI * 2;
-      const spread = Math.min(size.width, size.height) * 0.12;
+      const mass = massNorm(node.r, minR, maxR);
+      const spread = stage * (0.06 + 0.32 * (1 - mass));
+      const jitter = 0.55 + Math.random() * 0.45;
       return {
         ...node,
-        x: cx + Math.cos(angle) * spread * Math.random(),
-        y: cy + Math.sin(angle) * spread * Math.random(),
+        x: cx + Math.cos(angle) * spread * jitter,
+        y: cy + Math.sin(angle) * spread * jitter,
       };
     });
 
+    const centerStrength = (node: CloudNode) =>
+      centerStrengthBase + centerStrengthMass * massNorm(node.r, minR, maxR);
+
     const simulation = forceSimulation(seeded)
       .force("center", forceCenter(cx, cy))
-      .force("x", forceX(cx).strength(0.06))
-      .force("y", forceY(cy).strength(0.06))
-      .force("charge", forceManyBody().strength(-14))
+      .force(
+        "x",
+        forceX(cx).strength((node) => centerStrength(node as CloudNode))
+      )
+      .force(
+        "y",
+        forceY(cy).strength((node) => centerStrength(node as CloudNode))
+      )
+      .force("charge", forceManyBody().strength(chargeStrength))
       .force(
         "collide",
         forceCollide<CloudNode>()
           .radius((node) => {
             const swell = hoverIdRef.current === node.id ? SWELL : 1;
-            return node.r * swell + PAD;
+            return node.r * swell + pad;
           })
-          .iterations(4)
+          .iterations(collideIterations)
+      )
+      .force(
+        "bounds",
+        forceBounds(size.width, size.height, boundaryStrength, () => hoverIdRef.current)
       )
       .alpha(1)
-      .alphaDecay(0.03);
+      .alphaDecay(alphaDecay);
 
     simRef.current = simulation;
     simulation.on("tick", () => {
+      for (const node of simulation.nodes()) {
+        clampNodeToBounds(node, size.width, size.height, hoverIdRef.current);
+      }
       setNodes(simulation.nodes().map((node) => ({ ...node })));
     });
 
@@ -119,7 +253,7 @@ export function CoverCloud({
       simulation.stop();
       simRef.current = null;
     };
-  }, [sized, size.height, size.width]);
+  }, [sized, size.height, size.width, collisionPad, physics]);
 
   useEffect(() => {
     hoverIdRef.current = hoveredId;
@@ -130,7 +264,7 @@ export function CoverCloud({
       | undefined;
     collide?.radius((node) => {
       const swell = hoverIdRef.current === node.id ? SWELL : 1;
-      return node.r * swell + PAD;
+      return node.r * swell + collisionPadRef.current;
     });
     simulation.alpha(0.35).restart();
   }, [hoveredId]);

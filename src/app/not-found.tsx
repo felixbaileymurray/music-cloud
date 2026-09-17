@@ -1,16 +1,25 @@
+"use client";
+
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "@astryxdesign/core/Button";
+import { Text } from "@astryxdesign/core/Text";
+import { VStack } from "@astryxdesign/core/VStack";
 
 export default function NotFound() {
   return (
-    <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 py-24 text-center">
-      <p className="font-heading text-2xl">That page is not the cloud.</p>
-      <p className="mt-2 text-sm text-muted-foreground">
+    <VStack
+      gap={2}
+      hAlign="center"
+      vAlign="center"
+      padding={4}
+      width="100%"
+      minHeight="100svh"
+    >
+      <Text type="large">That page is not the cloud.</Text>
+      <Text type="body" color="secondary">
         There is only the listening-history cover cloud.
-      </p>
-      <Button className="mt-6" render={<Link href="/" />}>
-        Back
-      </Button>
-    </div>
+      </Text>
+      <Button label="Back" href="/" as={Link} />
+    </VStack>
   );
 }
