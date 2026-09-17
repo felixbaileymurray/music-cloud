@@ -1,49 +1,37 @@
 /* SPA shell + cover cloud — Astryx tokens + app-local layout tokens. */
 
 .spa-shell {
-  position: relative;
   height: 100svh;
   overflow: hidden;
-  background: var(--color-background-body);
+  box-sizing: border-box;
+  padding: var(--inset-page);
+  background: var(--color-background-surface);
   color: var(--color-text-primary);
   font-family: var(--font-family-body);
 }
 
-.spa-panel {
-  position: fixed;
-  z-index: var(--z-sticky);
-  top: var(--inset-page);
-  right: var(--inset-page);
-  display: flex;
-  width: var(--panel-width);
-  max-width: calc(100vw - (2 * var(--inset-page)));
-  max-height: calc(100svh - (2 * var(--inset-page)));
-  flex-direction: column;
-  gap: var(--spacing-4);
-  overflow: auto;
-  padding: var(--spacing-4);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-container);
-  background: var(--color-background-surface);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-med);
-}
-
-.spa-panel__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-2);
-}
-
-.spa-panel__actions > * {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.spa-main {
-  position: absolute;
-  inset: var(--inset-page);
+.spa-shell > .astryx-layout {
+  height: 100%;
   min-height: 0;
+}
+
+/*
+ * Layout's middle row (content + end panel) does not inherit gap from the
+ * outer layout node. Keep the same inset between canvas and sidebar cards.
+ */
+.spa-shell .astryx-layout-panel {
+  margin-inline-start: var(--inset-page);
+}
+
+.spa-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: var(--radius-container);
+  background: var(--color-background-body);
+  color: var(--color-text-primary);
 }
 
 .spa-cloud-stage {
@@ -81,6 +69,21 @@
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-background-surface);
+}
+
+@keyframes album-preview-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.album-preview-icon {
+  display: inline-flex;
+  animation: album-preview-pulse 1s ease-in-out infinite;
 }
 
 /* —— Cover cloud token surfaces —— */

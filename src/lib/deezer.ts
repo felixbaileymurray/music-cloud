@@ -1,6 +1,12 @@
 import { namesMatch } from "@/lib/normalize";
 import { previewUrlPlayable } from "@/lib/preview-probe";
-import type { AlbumArtist, ClipRef, PreviewMatch } from "@/lib/types";
+import type {
+  AlbumArtist,
+  AlbumDetails,
+  AlbumTrack,
+  ClipRef,
+  PreviewMatch,
+} from "@/lib/types";
 
 type DeezerAlbum = {
   id: number;
@@ -10,14 +16,25 @@ type DeezerAlbum = {
   artist?: { name?: string };
 };
 
+type DeezerAlbumFull = DeezerAlbum & {
+  label?: string;
+  nb_tracks?: number;
+  duration?: number;
+  release_date?: string;
+  genres?: { data?: Array<{ name?: string }> };
+};
+
 type DeezerSearchResponse = {
   data?: DeezerAlbum[];
 };
 
 type DeezerTrack = {
   id: number;
+  title?: string;
   preview?: string;
   rank?: number;
+  duration?: number;
+  track_position?: number;
 };
 
 type DeezerTracksResponse = {
@@ -45,9 +62,7 @@ export async function freshDeezerPreviewUrl(trackId: number) {
   return preview || null;
 }
 
-export async function lookupDeezer(
-  query: AlbumArtist
-): Promise<PreviewMatch | null> {
+async function findDeezerAlbum(query: AlbumArtist): Promise<DeezerAlbum | null> {
   const q = encodeURIComponent(`album:"${query.album}" artist:"${query.artist}"`);
   const search = await deezerJson<DeezerSearchResponse>(
     `https://api.deezer.com/search/album?q=${q}&limit=5`
@@ -70,6 +85,13 @@ export async function lookupDeezer(
     );
   }
 
+  return album ?? null;
+}
+
+export async function lookupDeezer(
+  query: AlbumArtist
+): Promise<PreviewMatch | null> {
+  const album = await findDeezerAlbum(query);
   if (!album) return null;
 
   const tracks = await deezerJson<DeezerTracksResponse>(
@@ -98,5 +120,65 @@ export async function lookupDeezer(
     clips,
     album: album.title,
     artist: album.artist?.name ?? query.artist,
+  };
+}
+
+function mapDeezerTracks(tracks: DeezerTrack[]): AlbumTrack[] {
+  return [...tracks]
+    .sort(
+      (a, b) =>
+        (a.track_position ?? Number.MAX_SAFE_INTEGER) -
+        (b.track_position ?? Number.MAX_SAFE_INTEGER)
+    )
+    .map((track) => ({
+      title: track.title?.trim() || "Untitled",
+      durationSec:
+        typeof track.duration === "number" && track.duration > 0
+          ? track.duration
+          : undefined,
+      position:
+        typeof track.track_position === "number"
+          ? track.track_position
+          : undefined,
+      previewUrl: track.preview || undefined,
+      deezerTrackId: Number.isFinite(track.id) ? track.id : undefined,
+    }))
+    .filter((track) => track.title.length > 0);
+}
+
+export async function lookupDeezerAlbumDetails(
+  query: AlbumArtist
+): Promise<AlbumDetails | null> {
+  const match = await findDeezerAlbum(query);
+  if (!match) return null;
+
+  const [full, tracksResponse] = await Promise.all([
+    deezerJson<DeezerAlbumFull>(`https://api.deezer.com/album/${match.id}`),
+    deezerJson<DeezerTracksResponse>(
+      `https://api.deezer.com/album/${match.id}/tracks?limit=100`
+    ),
+  ]);
+
+  const coverUrl =
+    full.cover_xl || full.cover_medium || match.cover_xl || match.cover_medium;
+  if (!coverUrl) return null;
+
+  const tracks = mapDeezerTracks(tracksResponse.data ?? []);
+  const genre = full.genres?.data?.find((item) => item.name?.trim())?.name;
+
+  return {
+    album: full.title || match.title,
+    artist: full.artist?.name ?? match.artist?.name ?? query.artist,
+    coverUrl,
+    genre: genre?.trim() || undefined,
+    releaseDate: full.release_date || undefined,
+    label: full.label?.trim() || undefined,
+    trackCount: full.nb_tracks ?? tracks.length,
+    durationSec:
+      typeof full.duration === "number" && full.duration > 0
+        ? full.duration
+        : undefined,
+    tracks,
+    source: "deezer",
   };
 }
