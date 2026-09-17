@@ -1,3 +1,5 @@
+import type { ClipRef } from "@/lib/types";
+
 const FADE_SECONDS = 0.09;
 
 type PlaySession = {
@@ -28,11 +30,14 @@ export function isAudioUnlocked() {
   return ctx?.state === "running";
 }
 
-function clipUrl(previewUrl: string) {
-  return `/api/clip?u=${encodeURIComponent(previewUrl)}`;
+function clipUrl(clip: ClipRef) {
+  if (clip.kind === "deezer") {
+    return `/api/clip?deezer=${clip.trackId}`;
+  }
+  return `/api/clip?u=${encodeURIComponent(clip.url)}`;
 }
 
-export async function playSnippet(previewUrl: string) {
+export async function playSnippet(clip: ClipRef) {
   const audio = getContext();
   if (audio.state === "suspended") {
     await audio.resume();
@@ -42,7 +47,9 @@ export async function playSnippet(previewUrl: string) {
   await fadeOutAndStop();
   if (token !== loadToken) return;
 
-  const response = await fetch(clipUrl(previewUrl), { cache: "force-cache" });
+  const response = await fetch(clipUrl(clip), {
+    cache: clip.kind === "deezer" ? "default" : "force-cache",
+  });
   if (!response.ok) return;
   const bytes = await response.arrayBuffer();
   if (token !== loadToken) return;

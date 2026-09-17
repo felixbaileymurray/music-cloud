@@ -1,5 +1,6 @@
 import { namesMatch } from "@/lib/normalize";
-import type { AlbumArtist } from "@/lib/types";
+import { previewUrlPlayable } from "@/lib/preview-probe";
+import type { AlbumArtist, ClipRef, PreviewMatch } from "@/lib/types";
 
 type ItunesAlbum = {
   collectionId: number;
@@ -40,7 +41,9 @@ async function itunesJson<T>(url: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function lookupItunes(query: AlbumArtist) {
+export async function lookupItunes(
+  query: AlbumArtist
+): Promise<PreviewMatch | null> {
   const term = encodeURIComponent(`${query.album} ${query.artist}`);
   const search = await itunesJson<ItunesSearchResponse>(
     `https://itunes.apple.com/search?term=${term}&entity=album&limit=5`
@@ -55,18 +58,27 @@ export async function lookupItunes(query: AlbumArtist) {
   const lookup = await itunesJson<ItunesLookupResponse>(
     `https://itunes.apple.com/lookup?id=${album.collectionId}&entity=song&limit=200`
   );
-  const previews = (lookup.results ?? [])
+  const urls = (lookup.results ?? [])
     .filter((item): item is ItunesTrack => "previewUrl" in item)
     .map((item) => item.previewUrl)
-    .filter((url): url is string => Boolean(url))
-    .slice(0, 3);
+    .filter((url): url is string => Boolean(url));
+
+  const clips: ClipRef[] = [];
+  for (const url of urls) {
+    if (clips.length >= 3) break;
+    if (clips.length === 0) {
+      const ok = await previewUrlPlayable(url);
+      if (!ok) continue;
+    }
+    clips.push({ kind: "itunes", url });
+  }
 
   const coverUrl = itunesArtwork(album.artworkUrl100);
-  if (!coverUrl || previews.length === 0) return null;
+  if (!coverUrl || clips.length === 0) return null;
 
   return {
     coverUrl,
-    previews,
+    clips,
     album: album.collectionName,
     artist: album.artistName,
   };
