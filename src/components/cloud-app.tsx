@@ -19,23 +19,39 @@ import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { AlbumInfoCard } from "@/components/album-info-card";
+import { CloudInfoPanel } from "@/components/cloud-info-panel";
+import { CreateCloudFlow } from "@/components/create-cloud-flow";
 import {
   CoverCloud,
   DEFAULT_CLOUD_PHYSICS,
   type CloudPhysics,
 } from "@/components/cover-cloud";
-import { HistoryIntake } from "@/components/history-intake";
 import { UploadModal } from "@/components/upload-modal";
+import {
+  cloudNodeId,
+  hitsMatchFocus,
+  sameCloudHit,
+  type HoverPreview,
+} from "@/lib/cloud-node";
 import { cacheKey } from "@/lib/normalize";
 import { idbGet, idbSet } from "@/lib/idb-cache";
+import {
+  idbTrackGet,
+  idbTrackSet,
+  trackCacheKey,
+} from "@/lib/idb-track-cache";
 import { unlockAudio } from "@/lib/snippet-player";
 import type {
   AlbumDetails,
   AlbumListen,
-  ClipRef,
+  CloudHit,
+  CloudKind,
   ParseResult,
   PreviewHit,
+  TrackDetails,
+  TrackHit,
+  TrackListen,
+  TrackParseResult,
 } from "@/lib/types";
 import "@/components/spa.css";
 
@@ -51,8 +67,14 @@ const DEFAULT_COVER_FRAME = 5;
 export function CloudApp() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [parsed, setParsed] = useState<ParseResult | null>(null);
-  const [resolved, setResolved] = useState<PreviewHit[]>([]);
+  const [createModalTitle, setCreateModalTitle] = useState("Create cloud");
+  const [resumeOAuth, setResumeOAuth] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const [cloudKind, setCloudKind] = useState<CloudKind>("album");
+  const [parsed, setParsed] = useState<ParseResult | TrackParseResult | null>(
+    null
+  );
+  const [resolved, setResolved] = useState<CloudHit[]>([]);
   const [progress, setProgress] = useState({
     done: 0,
     total: 0,
@@ -81,18 +103,18 @@ export function CloudApp() {
   );
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
-  const [hovered, setHovered] = useState<PreviewHit | null>(null);
-  const [locked, setLocked] = useState<PreviewHit | null>(null);
+  const [hovered, setHovered] = useState<CloudHit | null>(null);
+  const [locked, setLocked] = useState<CloudHit | null>(null);
   const [albumDetails, setAlbumDetails] = useState<AlbumDetails | null>(null);
+  const [trackDetails, setTrackDetails] = useState<TrackDetails | null>(null);
   const [albumLoading, setAlbumLoading] = useState(false);
+  const [trackLoading, setTrackLoading] = useState(false);
   const [albumError, setAlbumError] = useState<string | null>(null);
-  const [hoverPreview, setHoverPreview] = useState<{
-    album: string;
-    artist: string;
-    clip: ClipRef;
-  } | null>(null);
+  const [trackError, setTrackError] = useState<string | null>(null);
+  const [hoverPreview, setHoverPreview] = useState<HoverPreview | null>(null);
   const [exploreResetToken, setExploreResetToken] = useState(0);
   const albumDetailsCacheRef = useRef(new Map<string, AlbumDetails>());
+  const trackDetailsCacheRef = useRef(new Map<string, TrackDetails>());
 
   const focused = locked ?? hovered;
 
@@ -127,15 +149,48 @@ export function CloudApp() {
     : 0;
 
   useEffect(() => {
-    if (!focused) {
-      setAlbumDetails(null);
-      setAlbumError(null);
-      setAlbumLoading(false);
+    const params = new URLSearchParams(window.location.search);
+    const spotify = params.get("spotify");
+    if (spotify === "connected" && params.get("create") === "1") {
+      setUploadOpen(true);
+      setResumeOAuth(true);
+      window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+    if (spotify === "error" || spotify === "denied") {
+      const reason = params.get("reason");
+      const message =
+        spotify === "denied"
+          ? "Spotify authorization was cancelled."
+          : reason === "cookies"
+            ? "Spotify login lost its session cookie. Open the app at http://127.0.0.1:43217 (not localhost) and try again."
+            : reason === "token"
+              ? "Spotify accepted login but token exchange failed. Check client ID/secret and redirect URI."
+              : "Spotify connection failed. Try again from http://127.0.0.1:43217.";
+      setOauthError(message);
+      setUploadOpen(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!focused || cloudKind !== "album") {
+      if (cloudKind !== "album") {
+        setAlbumDetails(null);
+        setAlbumError(null);
+        setAlbumLoading(false);
+      }
+      if (!focused) {
+        setAlbumDetails(null);
+        setAlbumError(null);
+        setAlbumLoading(false);
+      }
       return;
     }
 
-    const album = focused.album;
-    const artist = focused.artist;
+    const albumHit = focused as PreviewHit;
+    const album = albumHit.album;
+    const artist = albumHit.artist;
     const key = cacheKey(album, artist);
     const cached = albumDetailsCacheRef.current.get(key);
     if (cached) {
@@ -184,18 +239,84 @@ export function CloudApp() {
     return () => {
       cancelled = true;
     };
-  }, [focused]);
+  }, [cloudKind, focused]);
 
-  function lockAlbum(album: PreviewHit) {
+  useEffect(() => {
+    if (!focused || cloudKind !== "track") {
+      if (cloudKind !== "track") {
+        setTrackDetails(null);
+        setTrackError(null);
+        setTrackLoading(false);
+      }
+      if (!focused) {
+        setTrackDetails(null);
+        setTrackError(null);
+        setTrackLoading(false);
+      }
+      return;
+    }
+
+    const trackHit = focused as TrackHit;
+    const key = trackCacheKey(trackHit.track, trackHit.artist);
+    const cached = trackDetailsCacheRef.current.get(key);
+    if (cached) {
+      setTrackDetails(cached);
+      setTrackError(null);
+      setTrackLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadDetails() {
+      setTrackLoading(true);
+      setTrackError(null);
+      try {
+        const response = await fetch("/api/track", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            track: trackHit.track,
+            artist: trackHit.artist,
+            album: trackHit.album,
+          }),
+        });
+        if (cancelled) return;
+        if (response.status === 404) {
+          setTrackDetails(null);
+          setTrackError("No track details found for this cover.");
+          return;
+        }
+        if (!response.ok) {
+          setTrackDetails(null);
+          setTrackError("Could not load track details. Try again.");
+          return;
+        }
+        const data = (await response.json()) as TrackDetails;
+        trackDetailsCacheRef.current.set(key, data);
+        if (!cancelled) setTrackDetails(data);
+      } catch {
+        if (!cancelled) {
+          setTrackDetails(null);
+          setTrackError("Could not load track details. Try again.");
+        }
+      } finally {
+        if (!cancelled) setTrackLoading(false);
+      }
+    }
+
+    void loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudKind, focused]);
+
+  function lockCloud(hit: CloudHit) {
     setLocked((current) => {
-      if (
-        current &&
-        current.album === album.album &&
-        current.artist === album.artist
-      ) {
+      if (current && sameCloudHit(cloudKind, current, hit)) {
         return null;
       }
-      return album;
+      return hit;
     });
   }
 
@@ -216,7 +337,8 @@ export function CloudApp() {
     resetExplore();
   }
 
-  async function startResolve(result: ParseResult) {
+  async function startAlbumResolve(result: ParseResult) {
+    setCloudKind("album");
     setParsed(result);
     setUploadOpen(false);
     setPhase("resolve");
@@ -243,7 +365,78 @@ export function CloudApp() {
         const index = cursor;
         cursor += 1;
         const listen = listens[index];
-        const hit = await resolveOne(listen);
+        const hit = await resolveAlbumOne(listen);
+        done += 1;
+        if (hit) {
+          kept.push(hit);
+          found += 1;
+        } else {
+          dropped += 1;
+        }
+        setProgress({ done, total: listens.length, found, dropped });
+      }
+    }
+
+    try {
+      await Promise.all([worker(), worker()]);
+      kept.sort((a, b) => b.listenCount - a.listenCount);
+      setResolved(kept);
+      setProgress({
+        done: listens.length,
+        total: listens.length,
+        found: kept.length,
+        dropped: listens.length - kept.length,
+      });
+      if (kept.length === 0) {
+        setPhase("empty-match");
+        return;
+      }
+      setCloudSize(Math.min(DEFAULT_CLOUD, kept.length));
+      setPhase("cloud");
+    } catch {
+      setResolveError("Lookup failed partway through. Try again in a moment.");
+      setPhase("idle");
+      setUploadOpen(true);
+    }
+  }
+
+  async function startTrackResolve(
+    listens: TrackListen[],
+    sourceLabel: string
+  ) {
+    setCloudKind("track");
+    setParsed({
+      kind: "track",
+      listens,
+      skippedRows: 0,
+      sourceLabel,
+      issues: [],
+    });
+    setUploadOpen(false);
+    setPhase("resolve");
+    setResolveError(null);
+    setHovered(null);
+    setLocked(null);
+    setHoverPreview(null);
+    setProgress({
+      done: 0,
+      total: listens.length,
+      found: 0,
+      dropped: 0,
+    });
+
+    const kept: TrackHit[] = [];
+    let done = 0;
+    let found = 0;
+    let dropped = 0;
+    let cursor = 0;
+
+    async function worker() {
+      while (cursor < listens.length) {
+        const index = cursor;
+        cursor += 1;
+        const listen = listens[index];
+        const hit = await resolveTrackOne(listen);
         done += 1;
         if (hit) {
           kept.push(hit);
@@ -285,35 +478,39 @@ export function CloudApp() {
 
   function openCreate() {
     setResolveError(null);
+    setResumeOAuth(false);
+    setCreateModalTitle("Create cloud");
     setUploadOpen(true);
   }
 
   function closeUpload() {
     if (!canDismissUpload) return;
     setUploadOpen(false);
+    setOauthError(null);
+    setResumeOAuth(false);
   }
 
   const focusedClip =
-    focused &&
-    hoverPreview &&
-    focused.album === hoverPreview.album &&
-    focused.artist === hoverPreview.artist
-      ? hoverPreview.clip
+    focused && hitsMatchFocus(cloudKind, focused, hoverPreview)
+      ? hoverPreview!.clip
       : null;
+
+  const skippedLabel =
+    parsed?.skippedRows && parsed.skippedRows > 0
+      ? cloudKind === "track"
+        ? ` · ${parsed.skippedRows} rows skipped (no track + artist)`
+        : ` · ${parsed.skippedRows} rows skipped (no album + artist)`
+      : "";
 
   const resolveStats = `${progress.total} processed · ${progress.found} found · ${progress.dropped} dropped`;
   const statusCopy =
     phase === "cloud"
-      ? `${visible.length} showing · ${resolveStats}${
-          parsed?.skippedRows
-            ? ` · ${parsed.skippedRows} rows skipped (no album + artist)`
-            : ""
-        }`
+      ? `${visible.length} showing · ${resolveStats}${skippedLabel}`
       : phase === "resolve"
         ? "Looking up covers and snippets…"
         : phase === "empty-match"
           ? `No snippets matched · ${resolveStats}`
-          : "Create a cloud from your listening history";
+          : "Create a cloud from Spotify or a listening history export";
 
   return (
     <div
@@ -460,11 +657,15 @@ export function CloudApp() {
               </Card>
 
               <Card width="100%" padding={4}>
-                <AlbumInfoCard
-                  details={albumDetails}
-                  listenCount={focused?.listenCount}
-                  isLoading={albumLoading}
-                  error={albumError}
+                <CloudInfoPanel
+                  kind={cloudKind}
+                  focused={focused}
+                  albumDetails={albumDetails}
+                  trackDetails={trackDetails}
+                  albumLoading={albumLoading}
+                  trackLoading={trackLoading}
+                  albumError={albumError}
+                  trackError={trackError}
                   activeClip={focusedClip}
                   isLocked={locked != null}
                 />
@@ -561,17 +762,18 @@ export function CloudApp() {
                   </div>
                 ) : null}
                 <CoverCloud
-                  albums={visible}
+                  cloudKind={cloudKind}
+                  items={visible}
                   audioUnlocked={audioUnlocked}
                   sizeRatio={sizeRatio}
                   collisionPad={collisionPad}
                   physics={physics}
                   lockedId={
-                    locked ? `${locked.artist}::${locked.album}` : null
+                    locked ? cloudNodeId(cloudKind, locked) : null
                   }
                   exploreResetToken={exploreResetToken}
                   onHoverChange={setHovered}
-                  onLockToggle={lockAlbum}
+                  onLockToggle={lockCloud}
                   onPreviewChange={setHoverPreview}
                 />
               </div>
@@ -584,9 +786,20 @@ export function CloudApp() {
         open={uploadOpen}
         dismissible={canDismissUpload}
         onClose={closeUpload}
-        title="Create cloud"
+        title={createModalTitle}
       >
-        <HistoryIntake onParsed={(result) => void startResolve(result)} />
+        <CreateCloudFlow
+          resumeAfterOAuth={resumeOAuth}
+          initialError={oauthError}
+          onTitleChange={setCreateModalTitle}
+          onAlbumParsed={(result) => void startAlbumResolve(result)}
+          onTrackParsed={(result) =>
+            void startTrackResolve(result.listens, result.sourceLabel)
+          }
+          onSpotifyTracks={(listens, sourceLabel) =>
+            void startTrackResolve(listens, sourceLabel)
+          }
+        />
       </UploadModal>
     </div>
   );
@@ -624,7 +837,7 @@ function Knob({
   );
 }
 
-async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
+async function resolveAlbumOne(listen: AlbumListen): Promise<PreviewHit | null> {
   const key = cacheKey(listen.album, listen.artist);
   const cached = await idbGet(key);
   if (cached) {
@@ -664,6 +877,57 @@ async function resolveOne(listen: AlbumListen): Promise<PreviewHit | null> {
     ...stored,
     album: listen.album,
     artist: listen.artist,
+    listenCount: listen.listenCount,
+  };
+}
+
+async function resolveTrackOne(listen: TrackListen): Promise<TrackHit | null> {
+  const key = trackCacheKey(listen.track, listen.artist);
+  const cached = await idbTrackGet(key);
+  if (cached) {
+    return { ...cached, listenCount: listen.listenCount };
+  }
+
+  const response = await fetch("/api/preview-track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      track: listen.track,
+      artist: listen.artist,
+      album: listen.album,
+    }),
+  });
+
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error("preview lookup failed");
+  }
+
+  const data = (await response.json()) as {
+    coverUrl: string;
+    clips: TrackHit["clips"];
+    track: string;
+    artist: string;
+    album?: string;
+  };
+  if (!Array.isArray(data.clips) || data.clips.length === 0) {
+    return null;
+  }
+  const stored = {
+    coverUrl: data.coverUrl,
+    clips: data.clips.slice(0, 1),
+    track: data.track,
+    artist: data.artist,
+    album: data.album,
+  };
+  await idbTrackSet(key, stored);
+  return {
+    ...stored,
+    track: listen.track,
+    artist: listen.artist,
+    album: listen.album ?? data.album,
     listenCount: listen.listenCount,
   };
 }

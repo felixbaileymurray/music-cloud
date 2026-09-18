@@ -6,7 +6,12 @@ import type {
   AlbumTrack,
   ClipRef,
   PreviewMatch,
+  TrackDetails,
+  TrackPreviewMatch,
+  TrackQuery,
 } from "@/lib/types";
+
+export type { TrackQuery };
 
 type DeezerAlbum = {
   id: number;
@@ -41,10 +46,106 @@ type DeezerTracksResponse = {
   data?: DeezerTrack[];
 };
 
+type DeezerSearchTrack = DeezerTrack & {
+  title?: string;
+  artist?: { name?: string };
+  album?: {
+    title?: string;
+    cover_xl?: string;
+    cover_medium?: string;
+  };
+};
+
+type DeezerTrackSearchResponse = {
+  data?: DeezerSearchTrack[];
+};
+
 type DeezerTrackLookup = {
   id?: number;
   preview?: string;
 };
+
+async function findDeezerTrack(query: TrackQuery): Promise<DeezerSearchTrack | null> {
+  const q = encodeURIComponent(
+    `track:"${query.track}" artist:"${query.artist}"`
+  );
+  const search = await deezerJson<DeezerTrackSearchResponse>(
+    `https://api.deezer.com/search/track?q=${q}&limit=8`
+  );
+  let match = (search.data ?? []).find(
+    (result) =>
+      namesMatch(result.title ?? "", query.track) &&
+      namesMatch(result.artist?.name ?? "", query.artist)
+  );
+  if (!match) {
+    const fallbackQ = encodeURIComponent(`${query.track} ${query.artist}`);
+    const fallback = await deezerJson<DeezerTrackSearchResponse>(
+      `https://api.deezer.com/search/track?q=${fallbackQ}&limit=8`
+    );
+    match = (fallback.data ?? []).find(
+      (result) =>
+        namesMatch(result.title ?? "", query.track) &&
+        namesMatch(result.artist?.name ?? "", query.artist)
+    );
+  }
+  return match ?? null;
+}
+
+export async function lookupDeezerTrack(
+  query: TrackQuery
+): Promise<TrackPreviewMatch | null> {
+  const track = await findDeezerTrack(query);
+  if (!track || !track.preview || !Number.isFinite(track.id)) return null;
+
+  const ok = await previewUrlPlayable(track.preview);
+  if (!ok) return null;
+
+  const coverUrl = track.album?.cover_xl || track.album?.cover_medium;
+  if (!coverUrl) return null;
+
+  return {
+    coverUrl,
+    track: track.title?.trim() || query.track,
+    artist: track.artist?.name?.trim() || query.artist,
+    album: track.album?.title?.trim() || query.album,
+    clips: [{ kind: "deezer", trackId: track.id }],
+  };
+}
+
+export async function lookupDeezerTrackDetails(
+  query: TrackQuery
+): Promise<TrackDetails | null> {
+  const track = await findDeezerTrack(query);
+  if (!track || !Number.isFinite(track.id)) return null;
+
+  const full = await deezerJson<
+    DeezerTrack & {
+      release_date?: string;
+      album?: { title?: string; cover_xl?: string; cover_medium?: string };
+      artist?: { name?: string };
+    }
+  >(`https://api.deezer.com/track/${track.id}`);
+
+  const coverUrl =
+    full.album?.cover_xl ||
+    full.album?.cover_medium ||
+    track.album?.cover_xl ||
+    track.album?.cover_medium;
+  if (!coverUrl) return null;
+
+  return {
+    track: full.title?.trim() || query.track,
+    artist: full.artist?.name?.trim() || query.artist,
+    album: full.album?.title?.trim() || query.album,
+    coverUrl,
+    durationSec:
+      typeof full.duration === "number" && full.duration > 0
+        ? full.duration
+        : undefined,
+    releaseDate: full.release_date || undefined,
+    source: "deezer",
+  };
+}
 
 async function deezerJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { cache: "no-store" });

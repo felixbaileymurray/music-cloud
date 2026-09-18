@@ -1,0 +1,6 @@
+# Local secrets — keep out of AI indexing (template stays visible)
+.env*
+!.env.example
+
+# Host / deploy metadata (may contain tokens)
+.vercel
