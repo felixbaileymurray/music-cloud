@@ -10,7 +10,13 @@ import {
   type Simulation,
 } from "d3-force";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ClipRef, PreviewHit } from "@/lib/types";
+import type { ClipRef, CloudHit, CloudKind } from "@/lib/types";
+import {
+  cloudNodeId,
+  cloudNodeLabel,
+  hoverPreviewFromHit,
+  type HoverPreview,
+} from "@/lib/cloud-node";
 import {
   playSnippet,
   prefetchSnippet,
@@ -18,7 +24,7 @@ import {
 } from "@/lib/snippet-player";
 import "@/components/spa.css";
 
-type CloudNode = PreviewHit & {
+type CloudNode = CloudHit & {
   id: string;
   r: number;
   x: number;
@@ -54,13 +60,13 @@ export const DEFAULT_CLOUD_PHYSICS: CloudPhysics = {
  * Prefer listen counts when they vary. Otherwise fall back to list rank so
  * datasets without play counts still get a continuous size hierarchy.
  */
-function sizeWeights(albums: PreviewHit[]): number[] {
-  const counts = albums.map((album) => album.listenCount);
+function sizeWeights(items: CloudHit[]): number[] {
+  const counts = items.map((item) => item.listenCount);
   const minCount = Math.min(...counts);
   const maxCount = Math.max(...counts);
   if (maxCount > minCount) return counts;
-  const n = albums.length;
-  return albums.map((_, index) => n - index);
+  const n = items.length;
+  return items.map((_, index) => n - index);
 }
 
 function radiusFor(
@@ -135,7 +141,8 @@ function clampNodeToBounds(
 }
 
 export function CoverCloud({
-  albums,
+  cloudKind,
+  items,
   audioUnlocked,
   sizeRatio = 4,
   collisionPad = 10,
@@ -146,18 +153,17 @@ export function CoverCloud({
   onLockToggle,
   onPreviewChange,
 }: {
-  albums: PreviewHit[];
+  cloudKind: CloudKind;
+  items: CloudHit[];
   audioUnlocked: boolean;
   sizeRatio?: number;
   collisionPad?: number;
   physics?: CloudPhysics;
   lockedId?: string | null;
   exploreResetToken?: number;
-  onHoverChange?: (album: PreviewHit | null) => void;
-  onLockToggle?: (album: PreviewHit) => void;
-  onPreviewChange?: (
-    preview: { album: string; artist: string; clip: ClipRef } | null
-  ) => void;
+  onHoverChange?: (hit: CloudHit | null) => void;
+  onLockToggle?: (hit: CloudHit) => void;
+  onPreviewChange?: (preview: HoverPreview | null) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const simRef = useRef<Simulation<CloudNode, undefined> | null>(null);
@@ -175,18 +181,18 @@ export function CoverCloud({
   onPreviewChangeRef.current = onPreviewChange;
 
   const sized = useMemo(() => {
-    if (albums.length === 0) return [];
-    const weights = sizeWeights(albums);
+    if (items.length === 0) return [];
+    const weights = sizeWeights(items);
     const minWeight = Math.min(...weights);
     const maxWeight = Math.max(...weights);
-    return albums.map((album, index) => ({
-      ...album,
-      id: `${album.artist}::${album.album}`,
+    return items.map((item, index) => ({
+      ...item,
+      id: cloudNodeId(cloudKind, item),
       r: radiusFor(weights[index], minWeight, maxWeight, sizeRatio),
       x: size.width / 2,
       y: size.height / 2,
     }));
-  }, [albums, size.height, size.width, sizeRatio]);
+  }, [cloudKind, items, size.height, size.width, sizeRatio]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -338,7 +344,7 @@ export function CoverCloud({
     const clip = node.clips[next % node.clips.length];
     cycleRef.current.set(node.id, next + 1);
     playingIdRef.current = node.id;
-    onPreviewChange?.({ album: node.album, artist: node.artist, clip });
+    onPreviewChange?.(hoverPreviewFromHit(cloudKind, node, clip));
     for (const other of node.clips) {
       void prefetchSnippet(other);
     }
@@ -399,7 +405,7 @@ export function CoverCloud({
           <button
             key={node.id}
             type="button"
-            aria-label={`${node.album} by ${node.artist}`}
+            aria-label={cloudNodeLabel(cloudKind, node)}
             aria-pressed={isLocked}
             onPointerEnter={(event) => {
               if (event.pointerType === "touch") return;
