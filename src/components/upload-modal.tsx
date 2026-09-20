@@ -26,7 +26,7 @@ export function UploadModal({
       isOpen={open}
       onOpenChange={handleOpenChange}
       purpose={dismissible ? "form" : "required"}
-      width="36rem"
+      width="48rem"
       maxHeight="90dvh"
     >
       <Layout

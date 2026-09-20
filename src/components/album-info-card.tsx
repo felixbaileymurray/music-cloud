@@ -23,6 +23,7 @@ import type { AlbumDetails, AlbumTrack, ClipRef } from "@/lib/types";
 import {
   previewUrlKey,
   streamingLinks,
+  genreTokenColor,
   type StreamingService,
 } from "@/lib/utils";
 
@@ -68,14 +69,12 @@ function trackMatchesClip(track: AlbumTrack, clip: ClipRef | null) {
 
 export function AlbumInfoCard({
   details,
-  listenCount,
   isLoading,
   error,
   activeClip = null,
   isLocked = false,
 }: {
   details: AlbumDetails | null;
-  listenCount?: number;
   isLoading: boolean;
   error: string | null;
   activeClip?: ClipRef | null;
@@ -83,26 +82,12 @@ export function AlbumInfoCard({
 }) {
   return (
     <VStack gap={4} width="100%" align="stretch">
-      <VStack gap={1} width="100%">
-        <HStack
-          gap={2}
-          width="100%"
-          justify="between"
-          align="center"
-        >
-          <Text type="supporting">Album</Text>
-          {isLocked ? (
-            <Icon icon={Lock} size="xsm" color="secondary" label="Album locked" />
-          ) : null}
-        </HStack>
-        <Text type="body" color="secondary">
-          {details
-            ? `${details.album} · ${details.artist}`
-            : isLoading
-              ? "Loading album details…"
-              : "Hover a cover to explore"}
-        </Text>
-      </VStack>
+      <HStack gap={2} width="100%" justify="between" align="center">
+        <Text type="supporting">Album</Text>
+        {isLocked ? (
+          <Icon icon={Lock} size="xsm" color="secondary" label="Album locked" />
+        ) : null}
+      </HStack>
 
       {isLoading ? (
         <VStack gap={3} width="100%" align="center" paddingBlock={4}>
@@ -137,30 +122,36 @@ export function AlbumInfoCard({
               <Heading level={3}>{details.album}</Heading>
               <Text color="secondary">{details.artist}</Text>
             </VStack>
-            <HStack gap={1} vAlign="center">
-              {streamingLinks(details.album, details.artist).map((link) => (
-                <IconButton
-                  key={link.id}
-                  label={`Open in ${link.label}`}
-                  tooltip={link.label}
-                  variant="ghost"
-                  size="sm"
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  icon={<Icon icon={STREAMING_ICONS[link.id]} size="sm" />}
-                />
-              ))}
-            </HStack>
-            {details.genre ? <Token label={details.genre} size="sm" /> : null}
+            {details.genres && details.genres.length > 0 ? (
+              <HStack gap={1} wrap="wrap">
+                {details.genres.map((genre) => (
+                  <Token
+                    key={genre}
+                    label={genre}
+                    size="sm"
+                    color={genreTokenColor(genre)}
+                  />
+                ))}
+              </HStack>
+            ) : null}
           </VStack>
+          <HStack gap={1} vAlign="center">
+            {streamingLinks(details.album, details.artist).map((link) => (
+              <IconButton
+                key={link.id}
+                label={`Open in ${link.label}`}
+                tooltip={link.label}
+                variant="ghost"
+                size="sm"
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                icon={<Icon icon={STREAMING_ICONS[link.id]} size="sm" />}
+              />
+            ))}
+          </HStack>
 
           <MetadataList columns="single" label={{ position: "start", width: 88 }}>
-            {typeof listenCount === "number" ? (
-              <MetadataListItem label="Listens">
-                {listenCount.toLocaleString()}
-              </MetadataListItem>
-            ) : null}
             {details.trackCount ? (
               <MetadataListItem label="Tracks">
                 {details.trackCount}
@@ -179,9 +170,6 @@ export function AlbumInfoCard({
             {details.label ? (
               <MetadataListItem label="Label">{details.label}</MetadataListItem>
             ) : null}
-            <MetadataListItem label="Source">
-              {details.source === "deezer" ? "Deezer" : "iTunes"}
-            </MetadataListItem>
           </MetadataList>
 
           {details.tracks.length > 0 ? (

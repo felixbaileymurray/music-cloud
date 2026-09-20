@@ -67,7 +67,7 @@ const DEFAULT_COVER_FRAME = 5;
 export function CloudApp() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [createModalTitle, setCreateModalTitle] = useState("Create cloud");
+  const [createModalTitle, setCreateModalTitle] = useState("Create Cloud");
   const [resumeOAuth, setResumeOAuth] = useState(false);
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [cloudKind, setCloudKind] = useState<CloudKind>("album");
@@ -479,7 +479,7 @@ export function CloudApp() {
   function openCreate() {
     setResolveError(null);
     setResumeOAuth(false);
-    setCreateModalTitle("Create cloud");
+    setCreateModalTitle("Create Cloud");
     setUploadOpen(true);
   }
 
@@ -659,7 +659,6 @@ export function CloudApp() {
               <Card width="100%" padding={4}>
                 <CloudInfoPanel
                   kind={cloudKind}
-                  focused={focused}
                   albumDetails={albumDetails}
                   trackDetails={trackDetails}
                   albumLoading={albumLoading}

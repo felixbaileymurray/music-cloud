@@ -64,7 +64,7 @@ export type AlbumDetails = {
   album: string;
   artist: string;
   coverUrl: string;
-  genre?: string;
+  genres?: string[];
   releaseDate?: string;
   label?: string;
   trackCount?: number;
