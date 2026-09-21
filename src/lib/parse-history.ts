@@ -1,3 +1,7 @@
+import {
+  isShareDocument,
+  recipientSourceLabel,
+} from "@/lib/share-payload";
 import type {
   AlbumListen,
   CloudKind,
@@ -157,7 +161,14 @@ function extractJsonRows(data: unknown): unknown[] | null {
   if (Array.isArray(data)) return data;
   const record = asRecord(data);
   if (!record) return null;
-  for (const key of ["endSong", "streamingHistory", "history", "items", "albums"]) {
+  for (const key of [
+    "endSong",
+    "streamingHistory",
+    "history",
+    "items",
+    "albums",
+    "listens",
+  ]) {
     if (Array.isArray(record[key])) return record[key] as unknown[];
   }
   return null;
@@ -276,7 +287,39 @@ export function parseHistoryText(
   const jsonTried = trimmed.startsWith("[") || trimmed.startsWith("{");
   if (jsonTried) {
     try {
-      const rows = extractJsonRows(JSON.parse(trimmed));
+      const data = JSON.parse(trimmed) as unknown;
+      if (isShareDocument(data)) {
+        if (data.kind !== kind) {
+          const fail = {
+            listens: [] as AlbumListen[] | TrackListen[],
+            skippedRows: 0,
+            sourceLabel,
+            issues: [
+              {
+                code: "unknown-format" as const,
+                detail: `${sourceLabel} is a ${data.kind} cloud share file. Switch to ${data.kind} mode in create, or use a matching export.`,
+              },
+            ],
+          };
+          return kind === "track"
+            ? { kind: "track", ...(fail as Omit<TrackParseResult, "kind">) }
+            : { kind: "album", ...(fail as Omit<ParseResult, "kind">) };
+        }
+        const sorted = [...data.listens].sort(
+          (a, b) => b.listenCount - a.listenCount
+        );
+        const base = {
+          listens: sorted,
+          skippedRows: 0,
+          sourceLabel: recipientSourceLabel(data),
+          issues: [] as ParseIssue[],
+        };
+        return kind === "track"
+          ? { kind: "track", ...(base as Omit<TrackParseResult, "kind">) }
+          : { kind: "album", ...(base as Omit<ParseResult, "kind">) };
+      }
+
+      const rows = extractJsonRows(data);
       if (!rows) {
         const fail = {
           listens: [] as AlbumListen[] | TrackListen[],

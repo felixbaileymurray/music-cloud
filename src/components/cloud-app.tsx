@@ -30,6 +30,7 @@ import {
   DEFAULT_CLOUD_PHYSICS,
   type CloudPhysics,
 } from "@/components/cover-cloud";
+import { ShareModal } from "@/components/share-modal";
 import { UploadModal } from "@/components/upload-modal";
 import {
   cloudNodeId,
@@ -44,6 +45,14 @@ import {
   idbTrackSet,
   trackCacheKey,
 } from "@/lib/idb-track-cache";
+import {
+  buildShareDocumentFromVisible,
+  decodeShareHash,
+  defaultCloudSize,
+  recipientSourceLabel,
+  SHARE_HASH_PREFIX,
+  type ShareDocumentV1,
+} from "@/lib/share-payload";
 import { unlockAudio } from "@/lib/snippet-player";
 import type {
   AlbumDetails,
@@ -61,7 +70,7 @@ import "@/components/spa.css";
 
 type Phase = "idle" | "resolve" | "cloud" | "empty-match";
 
-const DEFAULT_CLOUD = 40;
+const DEFAULT_CLOUD = 50;
 const DEFAULT_SIZE_RATIO = 4;
 const MIN_SIZE_RATIO = 1;
 const MAX_SIZE_RATIO = 6;
@@ -74,6 +83,11 @@ export function CloudApp() {
   const [createModalTitle, setCreateModalTitle] = useState("Create Cloud");
   const [createFlowKey, setCreateFlowKey] = useState(0);
   const [createGate, setCreateGate] = useState<"warning" | "flow">("flow");
+  const [replaceWarningReason, setReplaceWarningReason] = useState<
+    "create" | "share"
+  >("create");
+  const [pendingShare, setPendingShare] = useState<ShareDocumentV1 | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [cloudKind, setCloudKind] = useState<CloudKind>("album");
   const [parsed, setParsed] = useState<ParseResult | TrackParseResult | null>(
@@ -159,11 +173,40 @@ export function CloudApp() {
 
   const canDismissUpload = phase !== "resolve";
   const hasCloud = phase === "cloud";
+
+  const shareDocument = useMemo(() => {
+    if (!parsed || phase !== "cloud" || visible.length === 0) return null;
+    return buildShareDocumentFromVisible(
+      cloudKind,
+      parsed.sourceLabel,
+      visible
+    );
+  }, [cloudKind, parsed, phase, visible]);
   const progressPercent = parsed?.listens.length
     ? Math.round((progress.done / parsed.listens.length) * 100)
     : 0;
 
   useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes(SHARE_HASH_PREFIX)) {
+      void (async () => {
+        try {
+          const doc = await decodeShareHash(hash);
+          window.history.replaceState(
+            {},
+            "",
+            window.location.pathname + window.location.search
+          );
+          requestOpenShareDocument(doc);
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : "Could not open share link.";
+          setResolveError(message);
+        }
+      })();
+      return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const spotify = params.get("spotify");
     if (spotify === "connected" && params.get("create") === "1") {
@@ -407,7 +450,7 @@ export function CloudApp() {
         setPhase("empty-match");
         return;
       }
-      setCloudSize(Math.min(DEFAULT_CLOUD, kept.length));
+      setCloudSize(defaultCloudSize(kept.length));
       setPhase("cloud");
     } catch {
       setResolveError("Lookup failed partway through. Try again in a moment.");
@@ -478,13 +521,61 @@ export function CloudApp() {
         setPhase("empty-match");
         return;
       }
-      setCloudSize(Math.min(DEFAULT_CLOUD, kept.length));
+      setCloudSize(defaultCloudSize(kept.length));
       setPhase("cloud");
     } catch {
       setResolveError("Lookup failed partway through. Try again in a moment.");
       setPhase("idle");
       setUploadOpen(true);
     }
+  }
+
+  function applyShareDocument(doc: ShareDocumentV1) {
+    setShareOpen(false);
+    setPendingShare(null);
+    setReplaceWarningReason("create");
+    const label = recipientSourceLabel(doc);
+    if (doc.kind === "album") {
+      void startAlbumResolve({
+        kind: "album",
+        listens: doc.listens as AlbumListen[],
+        skippedRows: 0,
+        sourceLabel: label,
+        issues: [],
+      });
+      return;
+    }
+    void startTrackResolve(doc.listens as TrackListen[], label);
+  }
+
+  function requestOpenShareDocument(doc: ShareDocumentV1) {
+    if (hasCloud) {
+      setPendingShare(doc);
+      setReplaceWarningReason("share");
+      setCreateGate("warning");
+      setCreateModalTitle("Replace current cloud?");
+      setUploadOpen(true);
+      return;
+    }
+    applyShareDocument(doc);
+  }
+
+  function openShare() {
+    setShareOpen(true);
+  }
+
+  function closeShare() {
+    setShareOpen(false);
+  }
+
+  function confirmReplaceWarning() {
+    if (replaceWarningReason === "share" && pendingShare) {
+      applyShareDocument(pendingShare);
+      setUploadOpen(false);
+      setCreateGate("flow");
+      return;
+    }
+    beginCreateFlow();
   }
 
   async function enableAudio() {
@@ -502,6 +593,8 @@ export function CloudApp() {
     setResolveError(null);
     setOauthError(null);
     setCreateModalTitle("Create Cloud");
+    setReplaceWarningReason("create");
+    setPendingShare(null);
     if (hasCloud) {
       setCreateGate("warning");
     } else {
@@ -515,6 +608,8 @@ export function CloudApp() {
     setUploadOpen(false);
     setOauthError(null);
     setCreateGate("flow");
+    setPendingShare(null);
+    setReplaceWarningReason("create");
   }
 
   const focusedClip =
@@ -576,6 +671,7 @@ export function CloudApp() {
                           variant="primary"
                           icon={<Icon icon={Share2} size="sm" />}
                           width="100%"
+                          onClick={openShare}
                         />
                         <HStack gap={2} width="100%">
                           <StackItem size="fill">
@@ -884,7 +980,11 @@ export function CloudApp() {
           <VStack gap={4} width="100%">
             <Banner
               status="warning"
-              title="Creating a new cloud will overwrite the existing one."
+              title={
+                replaceWarningReason === "share"
+                  ? "Opening this shared cloud will overwrite the existing one."
+                  : "Creating a new cloud will overwrite the existing one."
+              }
               description="Do you want to save your work first?"
               collapsible={false}
             />
@@ -899,10 +999,14 @@ export function CloudApp() {
               </StackItem>
               <StackItem size="fill">
                 <Button
-                  label="Create anyway"
+                  label={
+                    replaceWarningReason === "share"
+                      ? "Open anyway"
+                      : "Create anyway"
+                  }
                   variant="primary"
                   width="100%"
-                  onClick={beginCreateFlow}
+                  onClick={confirmReplaceWarning}
                 />
               </StackItem>
             </HStack>
@@ -922,6 +1026,13 @@ export function CloudApp() {
           />
         )}
       </UploadModal>
+
+      <ShareModal
+        open={shareOpen}
+        document={shareDocument}
+        cloudKind={cloudKind}
+        onClose={closeShare}
+      />
     </div>
   );
 }

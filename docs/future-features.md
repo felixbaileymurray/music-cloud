@@ -14,12 +14,12 @@ Implement the modal UI and working export in one branch.
 
 ## Share
 
-Sidebar **Share** (primary icon when a cloud exists) should open a share modal with options such as link, chat integrations, and similar.
+**Shipped on `feat/share`.** Sidebar **Share** opens a modal with Copy share URL (up to 50 items), Download JSON (any size), and Open share file. Links embed a compressed flat list in the URL hash; larger clouds use the JSON file only.
 
 Mental model:
 
-- Sharing is essentially **export-as-flat-list-and-send** in one action
-- Opening a shared cloud is **create-from-imported-file** without the user doing separate export/import steps
-- A share link may be able to carry the cloud data inline (details TBD)
+- Sharing is **export-as-flat-list-and-send**
+- Opening a share is **create-from-imported-file** (re-match on the recipient)
+- No server-side storage of listening data
 
-Build share UI and transport together in a dedicated branch.
+Future: chat integrations, optional short-link hosting for very large lists.
