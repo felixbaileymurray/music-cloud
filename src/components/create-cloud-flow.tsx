@@ -31,7 +31,6 @@ export type CreateCloudFlowProps = {
   onTrackParsed: (result: TrackParseResult) => void;
   onSpotifyTracks: (listens: TrackListen[], sourceLabel: string) => void;
   onTitleChange?: (title: string) => void;
-  resumeAfterOAuth?: boolean;
   initialError?: string | null;
 };
 
@@ -89,15 +88,10 @@ export function CreateCloudFlow({
   onTrackParsed,
   onSpotifyTracks,
   onTitleChange,
-  resumeAfterOAuth = false,
   initialError = null,
 }: CreateCloudFlowProps) {
-  const [step, setStep] = useState<Step>(
-    resumeAfterOAuth ? "kind" : "chooser"
-  );
-  const [route, setRoute] = useState<BuildRoute | null>(
-    resumeAfterOAuth ? "spotify" : null
-  );
+  const [step, setStep] = useState<Step>("chooser");
+  const [route, setRoute] = useState<BuildRoute | null>(null);
   const [parseKind, setParseKind] = useState<ParseKind>("track");
   const [status, setStatus] = useState<SpotifyStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
@@ -249,12 +243,14 @@ export function CreateCloudFlow({
             onClick={startManual}
           />
         </Grid>
-        <Banner
-          status="info"
-          title="Privacy"
-          description="We never receive your Spotify password. Session tokens stay encrypted in your browser, and we don't keep a permanent copy of your listening history on our servers. Preview covers may be cached locally on this device."
-          collapsible={false}
-        />
+        {!status?.connected ? (
+          <Banner
+            status="info"
+            title="Privacy"
+            description="We never receive your Spotify password. Session tokens stay encrypted in your browser, and we don't keep a permanent copy of your listening history on our servers. Preview covers may be cached locally on this device."
+            collapsible={false}
+          />
+        ) : null}
         {status?.configured === false ? (
           <Banner
             status="warning"

@@ -14,11 +14,15 @@ import { Card } from "@astryxdesign/core/Card";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Heading } from "@astryxdesign/core/Heading";
+import { HStack } from "@astryxdesign/core/HStack";
+import { Icon } from "@astryxdesign/core/Icon";
 import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
 import { Text } from "@astryxdesign/core/Text";
+import { StackItem } from "@astryxdesign/core/Stack";
 import { VStack } from "@astryxdesign/core/VStack";
+import { Download, Plus, Share2 } from "lucide-react";
 import { CloudInfoPanel } from "@/components/cloud-info-panel";
 import { CreateCloudFlow } from "@/components/create-cloud-flow";
 import {
@@ -68,7 +72,8 @@ export function CloudApp() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [createModalTitle, setCreateModalTitle] = useState("Create Cloud");
-  const [resumeOAuth, setResumeOAuth] = useState(false);
+  const [createFlowKey, setCreateFlowKey] = useState(0);
+  const [createGate, setCreateGate] = useState<"warning" | "flow">("flow");
   const [oauthError, setOauthError] = useState<string | null>(null);
   const [cloudKind, setCloudKind] = useState<CloudKind>("album");
   const [parsed, setParsed] = useState<ParseResult | TrackParseResult | null>(
@@ -152,8 +157,9 @@ export function CloudApp() {
     const params = new URLSearchParams(window.location.search);
     const spotify = params.get("spotify");
     if (spotify === "connected" && params.get("create") === "1") {
+      setCreateFlowKey((key) => key + 1);
+      setCreateGate("flow");
       setUploadOpen(true);
-      setResumeOAuth(true);
       window.history.replaceState({}, "", window.location.pathname);
       return;
     }
@@ -476,10 +482,21 @@ export function CloudApp() {
     setAudioUnlocked(ok);
   }
 
+  function beginCreateFlow() {
+    setCreateFlowKey((key) => key + 1);
+    setCreateGate("flow");
+    setCreateModalTitle("Create Cloud");
+  }
+
   function openCreate() {
     setResolveError(null);
-    setResumeOAuth(false);
+    setOauthError(null);
     setCreateModalTitle("Create Cloud");
+    if (hasCloud) {
+      setCreateGate("warning");
+    } else {
+      beginCreateFlow();
+    }
     setUploadOpen(true);
   }
 
@@ -487,7 +504,7 @@ export function CloudApp() {
     if (!canDismissUpload) return;
     setUploadOpen(false);
     setOauthError(null);
-    setResumeOAuth(false);
+    setCreateGate("flow");
   }
 
   const focusedClip =
@@ -539,6 +556,46 @@ export function CloudApp() {
                     <Text type="body" color="secondary">
                       {statusCopy}
                     </Text>
+                  </VStack>
+
+                  <VStack gap={2} width="100%">
+                    {hasCloud ? (
+                      <>
+                        <Button
+                          label="Share"
+                          variant="primary"
+                          icon={<Icon icon={Share2} size="sm" />}
+                          width="100%"
+                        />
+                        <HStack gap={2} width="100%">
+                          <StackItem size="fill">
+                            <Button
+                              label="Create"
+                              variant="secondary"
+                              icon={<Icon icon={Plus} size="sm" />}
+                              onClick={openCreate}
+                              width="100%"
+                            />
+                          </StackItem>
+                          <StackItem size="fill">
+                            <Button
+                              label="Save"
+                              variant="secondary"
+                              icon={<Icon icon={Download} size="sm" />}
+                              width="100%"
+                            />
+                          </StackItem>
+                        </HStack>
+                      </>
+                    ) : (
+                      <Button
+                        label="Create"
+                        variant="primary"
+                        icon={<Icon icon={Plus} size="sm" />}
+                        onClick={openCreate}
+                        width="100%"
+                      />
+                    )}
                   </VStack>
 
                   {phase === "cloud" ? (
@@ -642,17 +699,6 @@ export function CloudApp() {
                       </Collapsible>
                     </VStack>
                   ) : null}
-
-                  <VStack gap={2} width="100%">
-                    <Button
-                      label="Create"
-                      variant="primary"
-                      onClick={openCreate}
-                      width="100%"
-                    />
-                    <Button label="Share" isDisabled={!hasCloud} width="100%" />
-                    <Button label="Save" isDisabled={!hasCloud} width="100%" />
-                  </VStack>
                 </VStack>
               </Card>
 
@@ -785,20 +831,51 @@ export function CloudApp() {
         open={uploadOpen}
         dismissible={canDismissUpload}
         onClose={closeUpload}
-        title={createModalTitle}
+        title={
+          createGate === "warning" ? "Replace current cloud?" : createModalTitle
+        }
       >
-        <CreateCloudFlow
-          resumeAfterOAuth={resumeOAuth}
-          initialError={oauthError}
-          onTitleChange={setCreateModalTitle}
-          onAlbumParsed={(result) => void startAlbumResolve(result)}
-          onTrackParsed={(result) =>
-            void startTrackResolve(result.listens, result.sourceLabel)
-          }
-          onSpotifyTracks={(listens, sourceLabel) =>
-            void startTrackResolve(listens, sourceLabel)
-          }
-        />
+        {createGate === "warning" ? (
+          <VStack gap={4} width="100%">
+            <Banner
+              status="warning"
+              title="Creating a new cloud will overwrite the existing one."
+              description="Do you want to save your work first?"
+              collapsible={false}
+            />
+            <HStack gap={2} width="100%">
+              <StackItem size="fill">
+                <Button
+                  label="Save first"
+                  variant="secondary"
+                  width="100%"
+                  onClick={closeUpload}
+                />
+              </StackItem>
+              <StackItem size="fill">
+                <Button
+                  label="Create anyway"
+                  variant="primary"
+                  width="100%"
+                  onClick={beginCreateFlow}
+                />
+              </StackItem>
+            </HStack>
+          </VStack>
+        ) : (
+          <CreateCloudFlow
+            key={createFlowKey}
+            initialError={oauthError}
+            onTitleChange={setCreateModalTitle}
+            onAlbumParsed={(result) => void startAlbumResolve(result)}
+            onTrackParsed={(result) =>
+              void startTrackResolve(result.listens, result.sourceLabel)
+            }
+            onSpotifyTracks={(listens, sourceLabel) =>
+              void startTrackResolve(listens, sourceLabel)
+            }
+          />
+        )}
       </UploadModal>
     </div>
   );
