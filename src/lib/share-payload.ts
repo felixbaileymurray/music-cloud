@@ -1,9 +1,10 @@
+import { isTrackHit } from "@/lib/types";
 import type {
   AlbumListen,
+  CloudHit,
   CloudKind,
-  ParseResult,
+  PreviewHit,
   TrackListen,
-  TrackParseResult,
 } from "@/lib/types";
 
 export const SHARE_URL_MAX_ITEMS = 50;
@@ -38,19 +39,53 @@ export function isShareDocument(value: unknown): value is ShareDocumentV1 {
   return true;
 }
 
-export function buildShareDocument(
+export function buildShareDocumentFromVisible(
   cloudKind: CloudKind,
-  parsed: ParseResult | TrackParseResult
+  sourceLabel: string,
+  visibleHits: CloudHit[]
 ): ShareDocumentV1 | null {
-  if (cloudKind === "artist") return null;
-  if (parsed.kind !== cloudKind) return null;
-  if (parsed.listens.length === 0) return null;
-  return {
-    v: 1,
-    kind: parsed.kind,
-    sourceLabel: parsed.sourceLabel,
-    listens: parsed.listens,
-  };
+  if (cloudKind === "artist" || visibleHits.length === 0) return null;
+
+  if (cloudKind === "track") {
+    const listens: TrackListen[] = [];
+    for (const hit of visibleHits) {
+      if (!isTrackHit(hit)) continue;
+      listens.push({
+        track: hit.track,
+        artist: hit.artist,
+        album: hit.album,
+        listenCount: hit.listenCount,
+      });
+    }
+    if (listens.length === 0) return null;
+    return { v: 1, kind: "track", sourceLabel, listens };
+  }
+
+  const listens: AlbumListen[] = [];
+  for (const hit of visibleHits) {
+    if (isTrackHit(hit)) continue;
+    const albumHit = hit as PreviewHit;
+    listens.push({
+      album: albumHit.album,
+      artist: albumHit.artist,
+      listenCount: albumHit.listenCount,
+    });
+  }
+  if (listens.length === 0) return null;
+  return { v: 1, kind: "album", sourceLabel, listens };
+}
+
+export function shareItemTypeLabel(
+  cloudKind: CloudKind,
+  count: number
+): string {
+  const noun =
+    cloudKind === "track"
+      ? "track"
+      : cloudKind === "artist"
+        ? "artist"
+        : "album";
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
 export function shareDocumentToJson(doc: ShareDocumentV1): string {
@@ -135,9 +170,8 @@ export async function decodeShareHash(hash: string): Promise<ShareDocumentV1> {
   return parseShareJson(json);
 }
 
-export function shareUrlItemLimitReason(listenCount: number): string | null {
-  if (listenCount <= SHARE_URL_MAX_ITEMS) return null;
-  return `Share links support up to ${SHARE_URL_MAX_ITEMS} items so the URL stays small enough to copy and send. This cloud has ${listenCount}. Download the JSON file and send that instead.`;
+export function shareUrlLargeListDescription(listenCount: number): string {
+  return `Share links are unavailable for large lists. This cloud has ${listenCount} items. Download the JSON file and share that instead.`;
 }
 
 export async function buildSharePageUrl(

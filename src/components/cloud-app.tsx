@@ -46,7 +46,7 @@ import {
   trackCacheKey,
 } from "@/lib/idb-track-cache";
 import {
-  buildShareDocument,
+  buildShareDocumentFromVisible,
   decodeShareHash,
   defaultCloudSize,
   recipientSourceLabel,
@@ -175,9 +175,13 @@ export function CloudApp() {
   const hasCloud = phase === "cloud";
 
   const shareDocument = useMemo(() => {
-    if (!parsed || phase !== "cloud") return null;
-    return buildShareDocument(cloudKind, parsed);
-  }, [cloudKind, parsed, phase]);
+    if (!parsed || phase !== "cloud" || visible.length === 0) return null;
+    return buildShareDocumentFromVisible(
+      cloudKind,
+      parsed.sourceLabel,
+      visible
+    );
+  }, [cloudKind, parsed, phase, visible]);
   const progressPercent = parsed?.listens.length
     ? Math.round((progress.done / parsed.listens.length) * 100)
     : 0;
@@ -883,18 +887,11 @@ export function CloudApp() {
                   headingLevel={1}
                   actions={
                     !uploadOpen ? (
-                      <HStack gap={2} wrap="wrap">
-                        <Button
-                          label="Create"
-                          variant="primary"
-                          onClick={openCreate}
-                        />
-                        <Button
-                          label="Open shared cloud"
-                          variant="ghost"
-                          onClick={openShare}
-                        />
-                      </HStack>
+                      <Button
+                        label="Create"
+                        variant="primary"
+                        onClick={openCreate}
+                      />
                     ) : undefined
                   }
                 />
@@ -1033,8 +1030,8 @@ export function CloudApp() {
       <ShareModal
         open={shareOpen}
         document={shareDocument}
+        cloudKind={cloudKind}
         onClose={closeShare}
-        onOpenShareDocument={requestOpenShareDocument}
       />
     </div>
   );
