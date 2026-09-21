@@ -103,6 +103,12 @@ export function CloudApp() {
   const [collideIterations, setCollideIterations] = useState(
     DEFAULT_CLOUD_PHYSICS.collideIterations
   );
+  const [collideStrength, setCollideStrength] = useState(
+    DEFAULT_CLOUD_PHYSICS.collideStrength
+  );
+  const [hoverReheat, setHoverReheat] = useState(
+    DEFAULT_CLOUD_PHYSICS.hoverReheat
+  );
   const [boundaryStrength, setBoundaryStrength] = useState(
     DEFAULT_CLOUD_PHYSICS.boundaryStrength
   );
@@ -135,6 +141,8 @@ export function CloudApp() {
       chargeStrength,
       alphaDecay,
       collideIterations,
+      collideStrength,
+      hoverReheat,
       boundaryStrength,
     }),
     [
@@ -143,6 +151,8 @@ export function CloudApp() {
       chargeStrength,
       alphaDecay,
       collideIterations,
+      collideStrength,
+      hoverReheat,
       boundaryStrength,
     ]
   );
@@ -600,20 +610,17 @@ export function CloudApp() {
 
                   {phase === "cloud" ? (
                     <VStack gap={4} width="100%">
-                      <Slider
-                        label="Cloud size"
-                        min={1}
-                        max={resolved.length}
-                        step={1}
-                        value={Math.min(cloudSize, resolved.length)}
-                        onChange={setCloudSize}
-                        formatValue={(value) => `${value}`}
-                        valueDisplay="text"
-                        width="100%"
-                      />
-
                       <Collapsible trigger="Customise" defaultIsOpen={false}>
                         <VStack gap={3} width="100%" paddingBlockStart={3}>
+                          <Knob
+                            label="Cloud size"
+                            display={`${Math.min(cloudSize, resolved.length)}`}
+                            min={1}
+                            max={resolved.length}
+                            step={1}
+                            value={Math.min(cloudSize, resolved.length)}
+                            onChange={setCloudSize}
+                          />
                           <Knob
                             label="Size ratio"
                             display={`${sizeRatio.toFixed(1)}×`}
@@ -623,6 +630,14 @@ export function CloudApp() {
                             value={sizeRatio}
                             onChange={setSizeRatio}
                           />
+                        </VStack>
+                      </Collapsible>
+
+                      <Collapsible
+                        trigger="Development Controls"
+                        defaultIsOpen={false}
+                      >
+                        <VStack gap={3} width="100%" paddingBlockStart={3}>
                           <Knob
                             label="Collision pad"
                             display={`${collisionPad}px`}
@@ -685,6 +700,24 @@ export function CloudApp() {
                             step={1}
                             value={collideIterations}
                             onChange={setCollideIterations}
+                          />
+                          <Knob
+                            label="Collide strength"
+                            display={collideStrength.toFixed(2)}
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={collideStrength}
+                            onChange={setCollideStrength}
+                          />
+                          <Knob
+                            label="Hover reheat"
+                            display={hoverReheat.toFixed(2)}
+                            min={0.05}
+                            max={0.5}
+                            step={0.01}
+                            value={hoverReheat}
+                            onChange={setHoverReheat}
                           />
                           <Knob
                             label="Boundary"
