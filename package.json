@@ -38,5 +38,10 @@
   },
   "astryx": {
     "theme": "@astryxdesign/theme-neutral"
+  },
+  "allowScripts": {
+    "@astryxdesign/cli": true,
+    "@astryxdesign/core": true,
+    "unrs-resolver": true
   }
 }
