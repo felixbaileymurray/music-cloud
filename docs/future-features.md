@@ -6,7 +6,7 @@ Notes for later branches. Prefer shipping UI and real behavior together rather t
 
 **Shipped on `feat/save`.** Sidebar **Save** opens a modal with:
 
-- Image export: PNG/JPEG, resolution Low/Medium/High (1×/2×/3×), JPEG quality presets, cloud-canvas-only capture (neutral visuals, current aspect ratio, solid canvas background)
+- Image export: PNG/JPEG/WebP, resolution Low/Medium/High (1×/2×/3×), cloud-canvas-only capture (neutral visuals, current aspect ratio, solid canvas background)
 - JSON snapshot: same flat-list document as Share (`ShareDocumentV1` of visible items), re-open via Create upload
 
 Filenames include kind and date.

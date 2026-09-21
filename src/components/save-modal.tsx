@@ -19,7 +19,7 @@ import {
   saveImageFileName,
   saveJsonFileName,
   type SaveImageFormat,
-  type SaveQualityPreset,
+  type SaveResolutionPreset,
 } from "@/lib/save-image";
 import {
   shareDocumentToJson,
@@ -45,9 +45,8 @@ export function SaveModal({
   onClose: () => void;
 }) {
   const [format, setFormat] = useState<SaveImageFormat>("png");
-  const [resolution, setResolution] = useState<SaveQualityPreset>("medium");
-  const [jpegQuality, setJpegQuality] =
-    useState<SaveQualityPreset>("high");
+  const [resolution, setResolution] =
+    useState<SaveResolutionPreset>("medium");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +63,6 @@ export function SaveModal({
       const blob = await captureCloudImage(frame, {
         format,
         resolution,
-        jpegQuality,
       });
       downloadBlob(blob, saveImageFileName(cloudKind, format));
     } catch (err) {
@@ -116,6 +114,7 @@ export function SaveModal({
             >
               <SegmentedControlItem value="png" label="PNG" />
               <SegmentedControlItem value="jpeg" label="JPEG" />
+              <SegmentedControlItem value="webp" label="WebP" />
             </SegmentedControl>
           </VStack>
 
@@ -123,7 +122,7 @@ export function SaveModal({
             label="Resolution"
             description="How many pixels relative to the on-screen canvas."
             value={resolution}
-            onChange={(value) => setResolution(value as SaveQualityPreset)}
+            onChange={(value) => setResolution(value as SaveResolutionPreset)}
             width="100%"
           >
             <RadioListItem
@@ -142,32 +141,6 @@ export function SaveModal({
               description="3× — sharper for print or zoom"
             />
           </RadioList>
-
-          {format === "jpeg" ? (
-            <RadioList
-              label="JPEG quality"
-              description="Compression trade-off. Does not change pixel dimensions."
-              value={jpegQuality}
-              onChange={(value) => setJpegQuality(value as SaveQualityPreset)}
-              width="100%"
-            >
-              <RadioListItem
-                value="low"
-                label="Low"
-                description="Smaller file"
-              />
-              <RadioListItem
-                value="medium"
-                label="Medium"
-                description="Balanced"
-              />
-              <RadioListItem
-                value="high"
-                label="High"
-                description="Fewer compression artifacts"
-              />
-            </RadioList>
-          ) : null}
 
           <Button
             label="Download image"
