@@ -1,0 +1,50 @@
+---
+description: Semantic versioning and how to cut GitHub Releases for Music Cloud
+alwaysApply: true
+---
+
+# Releases
+
+## Versioning
+
+Music Cloud uses [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). The app is private (not an npm package); versions are for tags, GitHub Releases, and `package.json`.
+
+| Bump | When |
+|------|------|
+| **MAJOR** | Deliberate shipped-product cut (`1.0.0`), or later breaking user/data changes |
+| **MINOR** | New user-visible capability |
+| **PATCH** | Fixes and small tweaks with no new capability |
+
+Stay on **0.x** until a deliberate first shipped-product release (`1.0.0`). While on 0.x, bump **MINOR** for feature batches and **PATCH** for fixes.
+
+## Branch model
+
+- Day-to-day: feature PRs into **`dev`** (see pull-requests rule).
+- Release: when a batch is ready, open a PR **`dev` → `main`**, merge, then cut the version on **`main`**.
+- Tag only commits on **`main`**. Never tag from `dev`.
+
+## Artifacts per release
+
+1. Bump `package.json` / `package-lock.json` to `X.Y.Z` (in the release PR or on `dev` before merging).
+2. Prepend a `## X.Y.Z` section to `CHANGELOG.md` (user-facing notes).
+3. Merge the release PR into `main`.
+4. Annotated tag on the merge commit: `git tag -a vX.Y.Z -m "vX.Y.Z"` then `git push origin vX.Y.Z`.
+5. GitHub Release from that tag (`gh release create vX.Y.Z …`) using the CHANGELOG notes.
+6. If the version bump landed only on `main`, merge `main` back into `dev` so versions do not diverge.
+
+## Checklist
+
+```text
+[ ] Decide MAJOR / MINOR / PATCH from changes since last tag
+[ ] Bump package.json (+ lockfile) to X.Y.Z
+[ ] Write CHANGELOG.md section for X.Y.Z
+[ ] Merge release PR into main
+[ ] Tag vX.Y.Z on the merge commit on main
+[ ] Push tag; create GitHub Release with notes
+[ ] Confirm production deploy tracks main (if applicable)
+[ ] Merge main back to dev if needed so versions don’t diverge
+```
+
+## Hotfixes
+
+Branch from the release tag or from `main`, ship a **PATCH**, tag + GitHub Release, then merge back into `dev`.
