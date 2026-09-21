@@ -1003,6 +1003,7 @@ export function CloudApp() {
       <SaveModal
         open={saveOpen}
         cloudKind={cloudKind}
+        document={shareDocument}
         getCloudFrame={() => cloudFrameRef.current}
         prepareNeutralCapture={prepareNeutralCapture}
         onClose={closeSave}

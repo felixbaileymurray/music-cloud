@@ -30,6 +30,13 @@ export function saveImageFileName(
   return `music-cloud-${kind}-${yyyy}-${mm}-${dd}.${ext}`;
 }
 
+export function saveJsonFileName(kind: CloudKind, date = new Date()) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `music-cloud-${kind}-${yyyy}-${mm}-${dd}.json`;
+}
+
 function canvasBackgroundColor(node: HTMLElement): string {
   const stage = node.closest(".spa-canvas") ?? node.parentElement ?? node;
   const color = getComputedStyle(stage).backgroundColor;

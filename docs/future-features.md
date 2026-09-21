@@ -4,15 +4,16 @@ Notes for later branches. Prefer shipping UI and real behavior together rather t
 
 ## Save / export modal
 
-**Image export is on `feat/save`.** Sidebar **Save** opens a modal with PNG/JPEG, resolution presets (Low/Medium/High → 1×/2×/3×), JPEG quality presets, and a download of the cloud canvas only (neutral visuals, canvas aspect ratio, solid canvas background). Filenames include kind and date.
+**Shipped on `feat/save`.** Sidebar **Save** opens a modal with:
 
-Still to add after **Share** merges:
+- Image export: PNG/JPEG, resolution Low/Medium/High (1×/2×/3×), JPEG quality presets, cloud-canvas-only capture (neutral visuals, current aspect ratio, solid canvas background)
+- JSON snapshot: same flat-list document as Share (`ShareDocumentV1` of visible items), re-open via Create upload
 
-- Download a **backup JSON** in the same shape as Share’s flat-list snapshot, so users can re-create the cloud later without Spotify
+Filenames include kind and date.
 
 ## Share
 
-**Shipped on `feat/share`.** Sidebar **Share** opens a modal with Copy share URL (up to 50 items), Download JSON (any size), and Open share file. Links embed a compressed flat list in the URL hash; larger clouds use the JSON file only.
+**Shipped on `feat/share`.** Sidebar **Share** opens a modal with Copy share URL (up to 50 items) and Download JSON (any size). Links embed a compressed flat list in the URL hash; larger clouds use the JSON file only. Share JSON can also be re-opened through Create upload.
 
 Mental model:
 
