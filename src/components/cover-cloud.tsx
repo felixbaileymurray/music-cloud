@@ -44,6 +44,8 @@ export type CloudPhysics = {
   chargeStrength: number;
   alphaDecay: number;
   collideIterations: number;
+  collideStrength: number;
+  hoverReheat: number;
   boundaryStrength: number;
 };
 
@@ -52,7 +54,9 @@ export const DEFAULT_CLOUD_PHYSICS: CloudPhysics = {
   centerStrengthMass: 0.3,
   chargeStrength: -10,
   alphaDecay: 0.08,
-  collideIterations: 6,
+  collideIterations: 3,
+  collideStrength: 0.7,
+  hoverReheat: 0.2,
   boundaryStrength: 1,
 };
 
@@ -173,11 +177,13 @@ export function CoverCloud({
   const playingIdRef = useRef<string | null>(null);
   const onPreviewChangeRef = useRef(onPreviewChange);
   const collisionPadRef = useRef(collisionPad);
+  const hoverReheatRef = useRef(physics.hoverReheat);
   const [nodes, setNodes] = useState<CloudNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
 
   collisionPadRef.current = collisionPad;
+  hoverReheatRef.current = physics.hoverReheat;
   onPreviewChangeRef.current = onPreviewChange;
 
   const sized = useMemo(() => {
@@ -219,6 +225,7 @@ export function CoverCloud({
       chargeStrength,
       alphaDecay,
       collideIterations,
+      collideStrength,
       boundaryStrength,
     } = physics;
     const radii = sized.map((node) => node.r);
@@ -260,6 +267,7 @@ export function CoverCloud({
             const swell = hoverIdRef.current === node.id ? SWELL : 1;
             return node.r * swell + pad;
           })
+          .strength(collideStrength)
           .iterations(collideIterations)
       )
       .force(
@@ -294,7 +302,8 @@ export function CoverCloud({
       const swell = hoverIdRef.current === node.id ? SWELL : 1;
       return node.r * swell + collisionPadRef.current;
     });
-    simulation.alpha(0.35).restart();
+    const alpha = Math.max(simulation.alpha(), hoverReheatRef.current);
+    simulation.alpha(alpha).restart();
   }, [hoveredId]);
 
   useEffect(() => {
