@@ -50,34 +50,23 @@ function formatReleaseDate(value: string) {
 
 export function TrackInfoCard({
   details,
-  weight,
   isLoading,
   error,
   isLocked = false,
 }: {
   details: TrackDetails | null;
-  weight?: number;
   isLoading: boolean;
   error: string | null;
   isLocked?: boolean;
 }) {
   return (
     <VStack gap={4} width="100%" align="stretch">
-      <VStack gap={1} width="100%">
-        <HStack gap={2} width="100%" justify="between" align="center">
-          <Text type="supporting">Track</Text>
-          {isLocked ? (
-            <Icon icon={Lock} size="xsm" color="secondary" label="Track locked" />
-          ) : null}
-        </HStack>
-        <Text type="body" color="secondary">
-          {details
-            ? `${details.track} · ${details.artist}`
-            : isLoading
-              ? "Loading track details…"
-              : "Hover a cover to explore"}
-        </Text>
-      </VStack>
+      <HStack gap={2} width="100%" justify="between" align="center">
+        <Text type="supporting">Track</Text>
+        {isLocked ? (
+          <Icon icon={Lock} size="xsm" color="secondary" label="Track locked" />
+        ) : null}
+      </HStack>
 
       {isLoading ? (
         <VStack gap={3} width="100%" align="center" paddingBlock={4}>
@@ -107,37 +96,30 @@ export function TrackInfoCard({
             <img src={details.coverUrl} alt="" />
           </AspectRatio>
 
-          <VStack gap={2} width="100%">
-            <VStack gap={1} width="100%">
-              <Heading level={3}>{details.track}</Heading>
-              <Text color="secondary">{details.artist}</Text>
-              {details.album ? (
-                <Text type="supporting">{details.album}</Text>
-              ) : null}
-            </VStack>
-            <HStack gap={1} vAlign="center">
-              {streamingLinks(details.track, details.artist).map((link) => (
-                <IconButton
-                  key={link.id}
-                  label={`Open in ${link.label}`}
-                  tooltip={link.label}
-                  variant="ghost"
-                  size="sm"
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  icon={<Icon icon={STREAMING_ICONS[link.id]} size="sm" />}
-                />
-              ))}
-            </HStack>
+          <VStack gap={1} width="100%">
+            <Heading level={3}>{details.track}</Heading>
+            <Text color="secondary">{details.artist}</Text>
+            {details.album ? (
+              <Text type="supporting">{details.album}</Text>
+            ) : null}
           </VStack>
+          <HStack gap={1} vAlign="center">
+            {streamingLinks(details.track, details.artist).map((link) => (
+              <IconButton
+                key={link.id}
+                label={`Open in ${link.label}`}
+                tooltip={link.label}
+                variant="ghost"
+                size="sm"
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                icon={<Icon icon={STREAMING_ICONS[link.id]} size="sm" />}
+              />
+            ))}
+          </HStack>
 
           <MetadataList columns="single" label={{ position: "start", width: 88 }}>
-            {typeof weight === "number" ? (
-              <MetadataListItem label="Weight">
-                {weight.toLocaleString()}
-              </MetadataListItem>
-            ) : null}
             {typeof details.durationSec === "number" ? (
               <MetadataListItem label="Length">
                 {formatDuration(details.durationSec)}
@@ -148,9 +130,6 @@ export function TrackInfoCard({
                 {formatReleaseDate(details.releaseDate)}
               </MetadataListItem>
             ) : null}
-            <MetadataListItem label="Source">
-              {details.source === "deezer" ? "Deezer" : "iTunes"}
-            </MetadataListItem>
           </MetadataList>
         </VStack>
       ) : null}

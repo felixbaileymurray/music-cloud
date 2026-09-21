@@ -265,13 +265,21 @@ export async function lookupDeezerAlbumDetails(
   if (!coverUrl) return null;
 
   const tracks = mapDeezerTracks(tracksResponse.data ?? []);
-  const genre = full.genres?.data?.find((item) => item.name?.trim())?.name;
+  const genres = (full.genres?.data ?? [])
+    .map((item) => item.name?.trim())
+    .filter((name): name is string => Boolean(name))
+    .filter(
+      (name, index, all) =>
+        all.findIndex((other) => other.toLowerCase() === name.toLowerCase()) ===
+        index
+    )
+    .slice(0, 3);
 
   return {
     album: full.title || match.title,
     artist: full.artist?.name ?? match.artist?.name ?? query.artist,
     coverUrl,
-    genre: genre?.trim() || undefined,
+    genres: genres.length > 0 ? genres : undefined,
     releaseDate: full.release_date || undefined,
     label: full.label?.trim() || undefined,
     trackCount: full.nb_tracks ?? tracks.length,

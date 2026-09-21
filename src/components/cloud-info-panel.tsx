@@ -5,17 +5,13 @@ import { AlbumInfoCard } from "@/components/album-info-card";
 import { TrackInfoCard } from "@/components/track-info-card";
 import type {
   AlbumDetails,
-  CloudHit,
   CloudKind,
   ClipRef,
-  PreviewHit,
   TrackDetails,
-  TrackHit,
 } from "@/lib/types";
 
 export function CloudInfoPanel({
   kind,
-  focused,
   albumDetails,
   trackDetails,
   albumLoading,
@@ -26,7 +22,6 @@ export function CloudInfoPanel({
   isLocked,
 }: {
   kind: CloudKind;
-  focused: CloudHit | null;
   albumDetails: AlbumDetails | null;
   trackDetails: TrackDetails | null;
   albumLoading: boolean;
@@ -48,11 +43,9 @@ export function CloudInfoPanel({
   }
 
   if (kind === "track") {
-    const trackFocused = focused as TrackHit | null;
     return (
       <TrackInfoCard
         details={trackDetails}
-        weight={trackFocused?.listenCount}
         isLoading={trackLoading}
         error={trackError}
         isLocked={isLocked}
@@ -60,11 +53,9 @@ export function CloudInfoPanel({
     );
   }
 
-  const albumFocused = focused as PreviewHit | null;
   return (
     <AlbumInfoCard
       details={albumDetails}
-      listenCount={albumFocused?.listenCount}
       isLoading={albumLoading}
       error={albumError}
       activeClip={activeClip}

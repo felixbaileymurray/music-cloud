@@ -169,7 +169,9 @@ export async function lookupItunesAlbumDetails(
     album: collection.collectionName || album.collectionName,
     artist: collection.artistName || album.artistName,
     coverUrl,
-    genre: collection.primaryGenreName?.trim() || undefined,
+    genres: collection.primaryGenreName?.trim()
+      ? [collection.primaryGenreName.trim()]
+      : undefined,
     releaseDate: collection.releaseDate?.slice(0, 10) || undefined,
     label: collection.copyright?.trim() || undefined,
     trackCount: collection.trackCount ?? tracks.length,

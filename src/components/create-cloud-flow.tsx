@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ComponentType, type SVGProps } from "react";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
+import { ClickableCard } from "@astryxdesign/core/ClickableCard";
+import { Grid } from "@astryxdesign/core/Grid";
+import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
+import { Icon } from "@astryxdesign/core/Icon";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
+import { Disc3, Music2, PenLine, UserRound } from "lucide-react";
 import { HistoryIntake } from "@/components/history-intake";
+import { SpotifyIcon } from "@/components/streaming-service-icons";
 import type { ParseKind } from "@/lib/parse-history";
 import type {
   AnyParseResult,
@@ -18,13 +24,13 @@ import type {
 
 type BuildRoute = "spotify" | "manual";
 type Step = "chooser" | "kind" | "spotify-source" | "manual";
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
 
 export type CreateCloudFlowProps = {
   onAlbumParsed: (result: ParseResult) => void;
   onTrackParsed: (result: TrackParseResult) => void;
   onSpotifyTracks: (listens: TrackListen[], sourceLabel: string) => void;
   onTitleChange?: (title: string) => void;
-  resumeAfterOAuth?: boolean;
   initialError?: string | null;
 };
 
@@ -34,20 +40,58 @@ type SpotifyStatus = {
   displayName?: string;
 };
 
+function OptionCard({
+  label,
+  title,
+  description,
+  icon,
+  isDisabled = false,
+  footer,
+  onClick,
+}: {
+  label: string;
+  title: string;
+  description: string;
+  icon: IconComponent;
+  isDisabled?: boolean;
+  footer?: string | null;
+  onClick: () => void;
+}) {
+  return (
+    <ClickableCard
+      label={label}
+      width="100%"
+      height="100%"
+      isDisabled={isDisabled}
+      onClick={onClick}
+    >
+      <VStack gap={2} width="100%">
+        <HStack gap={2} align="center">
+          <Icon icon={icon} size="sm" color="secondary" />
+          <Heading level={4}>{title}</Heading>
+        </HStack>
+        <Text type="body" color="secondary">
+          {description}
+        </Text>
+        {footer ? (
+          <Text type="supporting" color="secondary">
+            {footer}
+          </Text>
+        ) : null}
+      </VStack>
+    </ClickableCard>
+  );
+}
+
 export function CreateCloudFlow({
   onAlbumParsed,
   onTrackParsed,
   onSpotifyTracks,
   onTitleChange,
-  resumeAfterOAuth = false,
   initialError = null,
 }: CreateCloudFlowProps) {
-  const [step, setStep] = useState<Step>(
-    resumeAfterOAuth ? "kind" : "chooser"
-  );
-  const [route, setRoute] = useState<BuildRoute | null>(
-    resumeAfterOAuth ? "spotify" : null
-  );
+  const [step, setStep] = useState<Step>("chooser");
+  const [route, setRoute] = useState<BuildRoute | null>(null);
   const [parseKind, setParseKind] = useState<ParseKind>("track");
   const [status, setStatus] = useState<SpotifyStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
@@ -77,7 +121,7 @@ export function CreateCloudFlow({
 
   useEffect(() => {
     const titles: Record<Step, string> = {
-      chooser: "Create cloud",
+      chooser: "Create Cloud",
       kind: "What to cloud?",
       "spotify-source": "Choose tracks",
       manual: parseKind === "track" ? "Upload tracks" : "Upload albums",
@@ -164,33 +208,49 @@ export function CreateCloudFlow({
   }
 
   if (step === "chooser") {
+    const spotifyDisabled =
+      statusLoading || status?.configured === false;
+    const spotifyLabel = statusLoading
+      ? "Checking Spotify…"
+      : status?.connected
+        ? `Continue with Spotify${status.displayName ? ` (${status.displayName})` : ""}`
+        : "Connect Spotify";
+
     return (
       <VStack gap={5} width="100%">
         <Text type="body" color="secondary">
-          Connect Spotify for live top, recent, and saved tracks — or upload a
-          listening history export manually.
+          Choose a way to create your personalised music cloud.
         </Text>
-        <VStack gap={2} width="100%">
-          <Button
-            label={
-              statusLoading
-                ? "Checking Spotify…"
-                : status?.connected
-                  ? `Continue with Spotify${status.displayName ? ` (${status.displayName})` : ""}`
-                  : "Connect Spotify"
+        <Grid columns={2} gap={3} width="100%" align="stretch">
+          <OptionCard
+            label={spotifyLabel}
+            title="Connect Spotify"
+            description="Connect your Spotify account to access your top, recent, and saved content."
+            icon={SpotifyIcon}
+            isDisabled={spotifyDisabled}
+            footer={
+              status?.connected && status.displayName
+                ? `Connected as ${status.displayName}`
+                : null
             }
-            variant="primary"
-            width="100%"
-            isDisabled={statusLoading || status?.configured === false}
             onClick={startSpotify}
           />
-          <Button
-            label="Create manually"
-            variant="secondary"
-            width="100%"
+          <OptionCard
+            label="Create Manually"
+            title="Create Manually"
+            description="Upload a listening history export, or input your own list."
+            icon={PenLine}
             onClick={startManual}
           />
-        </VStack>
+        </Grid>
+        {!status?.connected ? (
+          <Banner
+            status="info"
+            title="Privacy"
+            description="We never receive your Spotify password. Session tokens stay encrypted in your browser, and we don't keep a permanent copy of your listening history on our servers. Preview covers may be cached locally on this device."
+            collapsible={false}
+          />
+        ) : null}
         {status?.configured === false ? (
           <Banner
             status="warning"
@@ -214,28 +274,35 @@ export function CreateCloudFlow({
         <Text type="body" color="secondary">
           Pick what each cover in the cloud represents.
         </Text>
-        <VStack gap={2} width="100%">
-          <Button
+        <Grid columns={3} gap={3} width="100%" align="stretch">
+          <OptionCard
             label="Tracks"
-            variant="primary"
-            width="100%"
+            title="Tracks"
+            description="Each cover is a track, sized by how much you listen."
+            icon={Music2}
             onClick={() => pickKind("track")}
           />
-          <Button
-            label={albumsDisabled ? "Albums (soon)" : "Albums"}
-            variant="secondary"
-            width="100%"
+          <OptionCard
+            label="Albums"
+            title="Albums"
+            description={
+              albumsDisabled
+                ? "Coming soon"
+                : "Each cover is an album, sized by how much you listen."
+            }
+            icon={Disc3}
             isDisabled={albumsDisabled}
             onClick={() => pickKind("album")}
           />
-          <Button
-            label="Artists (soon)"
-            variant="ghost"
-            width="100%"
+          <OptionCard
+            label="Artists"
+            title="Artists"
+            description="Coming soon"
+            icon={UserRound}
             isDisabled={artistsDisabled}
             onClick={() => pickKind("artist")}
           />
-        </VStack>
+        </Grid>
         <Button label="Back" variant="ghost" width="100%" onClick={goChooser} />
       </VStack>
     );
