@@ -1,0 +1,40 @@
+---
+description: How to open pull requests for this repo (base branch, author paragraph, body format)
+alwaysApply: true
+---
+
+# Pull requests
+
+## Base branch
+
+**Always open PRs against `dev`.** Never use `main` as the PR base in this repository.
+
+When using `gh pr create`, always pass `--base dev`.
+
+## Author paragraph (required before drafting)
+
+When the user asks to create or open a pull request:
+
+1. **Stop and ask** for a short paragraph in the user's own words explaining what the PR does and what it contains. Do not draft the full PR or run `gh pr create` until they provide it.
+2. After they reply, draft the rest of the PR using their paragraph at the top of the body (see format below).
+3. Then push if needed and create the PR.
+
+## PR body format
+
+```markdown
+<Author paragraph — paste or lightly edit the user's words; do not replace with generic agent prose.>
+
+## Summary
+
+- …
+- …
+
+## Test plan
+
+- [ ] …
+```
+
+## Git commands
+
+- Use `git log dev..HEAD` and `git diff dev...HEAD` (not `main`) to understand what the PR will include.
+- Follow the repo's existing PR title style from recent merged PRs on `dev`.
