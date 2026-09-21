@@ -4,13 +4,11 @@ Notes for later branches. Prefer shipping UI and real behavior together rather t
 
 ## Save / export modal
 
-Sidebar **Save** (ghost icon when a cloud exists) should open its own export modal with:
+**Image export is on `feat/save`.** Sidebar **Save** opens a modal with PNG/JPEG, resolution presets (Low/Medium/High → 1×/2×/3×), JPEG quality presets, and a download of the cloud canvas only (neutral visuals, canvas aspect ratio, solid canvas background). Filenames include kind and date.
 
-- Image type: `.png` / `.jpeg`
-- Resolution presets
-- Option to download a **backup flat-list file** in the same shape as a manual import, so users can re-create the cloud later without re-matching
+Still to add after **Share** merges:
 
-Implement the modal UI and working export in one branch.
+- Download a **backup JSON** in the same shape as Share’s flat-list snapshot, so users can re-create the cloud later without Spotify
 
 ## Share
 
