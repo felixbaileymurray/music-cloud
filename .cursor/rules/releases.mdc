@@ -20,29 +20,95 @@ Stay on **0.x** until a deliberate first shipped-product release (`1.0.0`). Whil
 ## Branch model
 
 - Day-to-day: feature PRs into **`dev`** (see pull-requests rule).
-- Release: when a batch is ready, open a PR **`dev` → `main`**, merge, then cut the version on **`main`**.
+- Release: when a batch is ready, cut from current `dev`, open a PR into **`main`**, merge, then tag on **`main`**.
 - Tag only commits on **`main`**. Never tag from `dev`.
+
+### Release PR head (do not use `dev`)
+
+Prefer a short-lived **`release/X.Y.Z`** branch from `dev` as the PR head into `main` — not `dev` itself.
+
+```text
+git fetch origin
+git checkout -b release/X.Y.Z origin/dev
+# bump version + CHANGELOG if not already on dev, push, open PR → main
+```
+
+**Why:** GitHub’s “Automatically delete head branches” deletes the PR’s **source** branch after merge. Using `dev` as head risks deleting the long-lived integration branch (unless `dev` is the repo default, which GitHub will not auto-delete — still don’t rely on that). A `release/X.Y.Z` head is safe to delete.
+
+### Merge strategy
+
+Use a normal **merge commit** for release PRs into `main` (not squash). Preserves the feature history already on `dev` and keeps the follow-up `main` → `dev` sync clean. Squash remains fine for feature PRs into `dev`.
 
 ## Artifacts per release
 
-1. Bump `package.json` / `package-lock.json` to `X.Y.Z` (in the release PR or on `dev` before merging).
-2. Prepend a `## X.Y.Z` section to `CHANGELOG.md` (user-facing notes).
-3. Merge the release PR into `main`.
-4. Annotated tag on the merge commit: `git tag -a vX.Y.Z -m "vX.Y.Z"` then `git push origin vX.Y.Z`.
-5. GitHub Release from that tag (`gh release create vX.Y.Z …`) using the CHANGELOG notes.
-6. If the version bump landed only on `main`, merge `main` back into `dev` so versions do not diverge.
+1. Branch `release/X.Y.Z` from `dev` (or bump on `dev` first, then branch).
+2. Bump `package.json` / `package-lock.json` to `X.Y.Z` if not already done.
+3. Prepend a `## X.Y.Z` section to `CHANGELOG.md` (user-facing notes).
+4. Open PR **`release/X.Y.Z` → `main`**; merge with a **merge commit**.
+5. Annotated tag on the merge commit: `git tag -a vX.Y.Z -m "vX.Y.Z"` then `git push origin vX.Y.Z`.
+6. GitHub Release from that tag (`gh release create vX.Y.Z …`) using the CHANGELOG notes.
+7. Merge `main` back into `dev` if needed so versions do not diverge.
 
 ## Checklist
 
 ```text
 [ ] Decide MAJOR / MINOR / PATCH from changes since last tag
+[ ] Branch release/X.Y.Z from dev (do not PR from dev itself)
 [ ] Bump package.json (+ lockfile) to X.Y.Z
 [ ] Write CHANGELOG.md section for X.Y.Z
-[ ] Merge release PR into main
+[ ] Merge release PR into main (merge commit, not squash)
 [ ] Tag vX.Y.Z on the merge commit on main
 [ ] Push tag; create GitHub Release with notes
 [ ] Confirm production deploy tracks main (if applicable)
 [ ] Merge main back to dev if needed so versions don’t diverge
+```
+
+## Command recipe (next release)
+
+Replace `X.Y.Z` throughout. Ask for the user’s PR author paragraph before creating the PR (see pull-requests rule).
+
+```bash
+# Version + notes on dev (or on the release branch)
+git fetch origin
+git checkout dev && git pull
+# bump package.json / package-lock.json; prepend ## X.Y.Z to CHANGELOG.md
+git add package.json package-lock.json CHANGELOG.md
+git commit -m "Bump to X.Y.Z and document the release."
+git push origin dev
+
+# Release branch (safe head if auto-delete is on)
+git checkout -b release/X.Y.Z origin/dev
+git push -u origin HEAD
+
+# PR → main (paste user’s author paragraph at the top of the body)
+gh pr create --base main --head release/X.Y.Z --title "Release X.Y.Z" --body "$(cat <<'EOF'
+<author paragraph>
+
+## Summary
+
+- …
+
+## Test plan
+
+- [ ] …
+
+EOF
+)"
+
+# Merge with a merge commit (not squash)
+gh pr merge --merge
+
+# Tag + GitHub Release on main
+git fetch origin main
+git checkout main && git pull
+git tag -a vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+gh release create vX.Y.Z --title "vX.Y.Z" --notes "$(sed -n '/^## X.Y.Z/,/^## /{ /^## X.Y.Z/d; /^## /d; p; }' CHANGELOG.md)"
+
+# Sync main → dev
+git checkout dev && git pull
+git merge origin/main
+git push origin dev
 ```
 
 ## Hotfixes
