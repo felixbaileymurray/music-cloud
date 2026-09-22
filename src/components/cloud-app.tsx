@@ -744,12 +744,6 @@ export function CloudApp() {
                         </Text>
                       </HStack>
                       <HStack gap={2} align="center" width="100%">
-                        <StatusDot variant="neutral" label="Showing" />
-                        <Text type="body" color="secondary">
-                          {visible.length} showing
-                        </Text>
-                      </HStack>
-                      <HStack gap={2} align="center" width="100%">
                         <StatusDot variant="success" label="Found" />
                         <Text type="body" color="secondary">
                           {progress.found} found
@@ -759,6 +753,12 @@ export function CloudApp() {
                         <StatusDot variant="error" label="Not found" />
                         <Text type="body" color="secondary">
                           {progress.dropped} not found
+                        </Text>
+                      </HStack>
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot variant="neutral" label="Showing" />
+                        <Text type="body" color="secondary">
+                          {visible.length} showing
                         </Text>
                       </HStack>
                       {skippedLabel ? (

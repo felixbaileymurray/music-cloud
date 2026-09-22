@@ -15,9 +15,10 @@ import {
 } from "@astryxdesign/core/SegmentedControl";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { Disc3, Music2, PenLine, UserRound } from "lucide-react";
+import { Disc3, Music2, PenLine, Sparkles, UserRound } from "lucide-react";
 import { HistoryIntake } from "@/components/history-intake";
 import { SpotifyIcon } from "@/components/streaming-service-icons";
+import { buildExampleAlbumParseResult } from "@/lib/example-albums";
 import type { ParseKind } from "@/lib/parse-history";
 import type {
   AnyParseResult,
@@ -153,6 +154,11 @@ export function CreateCloudFlow({
     setStep("kind");
   }
 
+  function startExample() {
+    setError(null);
+    onAlbumParsed(buildExampleAlbumParseResult());
+  }
+
   function startSpotify() {
     if (!status?.configured) {
       setError("Spotify is not configured on this server.");
@@ -234,7 +240,7 @@ export function CreateCloudFlow({
         <Text type="body" color="secondary">
           Choose a way to create your personalised music cloud.
         </Text>
-        <Grid columns={2} gap={3} width="100%" align="stretch">
+        <Grid columns={3} gap={3} width="100%" align="stretch">
           <OptionCard
             label={spotifyLabel}
             title="Connect Spotify"
@@ -255,6 +261,13 @@ export function CreateCloudFlow({
             description="Upload a listening history export, or input your own list."
             icon={PenLine}
             onClick={startManual}
+          />
+          <OptionCard
+            label="See an example"
+            title="See an example"
+            description="Generate an example cloud without entering any information."
+            icon={Sparkles}
+            onClick={startExample}
           />
         </Grid>
         {!status?.connected ? (
