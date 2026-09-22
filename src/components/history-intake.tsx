@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import { FileInput } from "@astryxdesign/core/FileInput";
-import { HStack } from "@astryxdesign/core/HStack";
 import { Text } from "@astryxdesign/core/Text";
 import { TextArea } from "@astryxdesign/core/TextArea";
 import { VStack } from "@astryxdesign/core/VStack";
@@ -70,32 +69,6 @@ export function HistoryIntake({
     onParsed(parsed);
   }
 
-  async function loadExample() {
-    const generation = ++parseGeneration.current;
-    setBusy(true);
-    setError(null);
-    try {
-      const response = await fetch("/example-history.csv");
-      if (!response.ok) throw new Error("missing example");
-      const parsed = parseHistoryText(
-        await response.text(),
-        "example-history.csv",
-        kind
-      );
-      if (generation !== parseGeneration.current) return;
-      if (parsed.listens.length === 0) {
-        setError(parsed.issues[0]?.detail ?? emptyMessage);
-        return;
-      }
-      onParsed(parsed);
-    } catch {
-      if (generation !== parseGeneration.current) return;
-      setError("Example list failed to load.");
-    } finally {
-      if (generation === parseGeneration.current) setBusy(false);
-    }
-  }
-
   const pastePlaceholder =
     kind === "track"
       ? "Paranoid Android - Radiohead\nRed Eyes - The War on Drugs"
@@ -137,22 +110,12 @@ export function HistoryIntake({
           rows={5}
           width="100%"
         />
-        <HStack gap={2} wrap="wrap">
-          <Button
-            label="Build from paste"
-            variant="primary"
-            isDisabled={busy || !text.trim()}
-            onClick={submitPaste}
-          />
-          {kind === "album" ? (
-            <Button
-              label="Use example list"
-              variant="ghost"
-              isDisabled={busy}
-              onClick={() => void loadExample()}
-            />
-          ) : null}
-        </HStack>
+        <Button
+          label="Build from paste"
+          variant="primary"
+          isDisabled={busy || !text.trim()}
+          onClick={submitPaste}
+        />
       </VStack>
 
       {error ? (

@@ -99,9 +99,6 @@ export function TrackInfoCard({
           <VStack gap={1} width="100%">
             <Heading level={3}>{details.track}</Heading>
             <Text color="secondary">{details.artist}</Text>
-            {details.album ? (
-              <Text type="supporting">{details.album}</Text>
-            ) : null}
           </VStack>
           <HStack gap={1} vAlign="center">
             {streamingLinks(details.track, details.artist).map((link) => (
@@ -129,6 +126,9 @@ export function TrackInfoCard({
               <MetadataListItem label="Released">
                 {formatReleaseDate(details.releaseDate)}
               </MetadataListItem>
+            ) : null}
+            {details.album ? (
+              <MetadataListItem label="Album">{details.album}</MetadataListItem>
             ) : null}
           </MetadataList>
         </VStack>

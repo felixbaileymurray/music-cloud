@@ -115,7 +115,7 @@ export function ShareModal({
           {showLargeListBanner ? (
             <Banner
               status="info"
-              title="Share link unavailable for large lists"
+              title="Share links are unavailable for lists over 50 items"
               description={shareUrlLargeListDescription(visibleCount)}
               collapsible={false}
             />

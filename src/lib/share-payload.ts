@@ -171,7 +171,7 @@ export async function decodeShareHash(hash: string): Promise<ShareDocumentV1> {
 }
 
 export function shareUrlLargeListDescription(listenCount: number): string {
-  return `Share links are unavailable for large lists. This cloud has ${listenCount} items. Download the JSON file and share that instead.`;
+  return `This cloud has ${listenCount} items. Download the JSON file and share that instead.`;
 }
 
 export async function buildSharePageUrl(

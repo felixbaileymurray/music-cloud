@@ -13,14 +13,15 @@ import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Grid } from "@astryxdesign/core/Grid";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Text } from "@astryxdesign/core/Text";
-import { StackItem } from "@astryxdesign/core/Stack";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Download, Plus, Share2 } from "lucide-react";
 import { CloudInfoPanel } from "@/components/cloud-info-panel";
@@ -75,6 +76,9 @@ const DEFAULT_CLOUD = 50;
 const DEFAULT_SIZE_RATIO = 4;
 const MIN_SIZE_RATIO = 1;
 const MAX_SIZE_RATIO = 6;
+const DEFAULT_ZOOM = 1;
+const MIN_ZOOM = 0.4;
+const MAX_ZOOM = 1.6;
 const DEFAULT_COLLISION_PAD = 10;
 const DEFAULT_COVER_FRAME = 5;
 
@@ -106,6 +110,7 @@ export function CloudApp() {
   });
   const [cloudSize, setCloudSize] = useState(DEFAULT_CLOUD);
   const [sizeRatio, setSizeRatio] = useState(DEFAULT_SIZE_RATIO);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [collisionPad, setCollisionPad] = useState(DEFAULT_COLLISION_PAD);
   const [coverFrame, setCoverFrame] = useState(DEFAULT_COVER_FRAME);
   const [centerStrengthBase, setCenterStrengthBase] = useState(
@@ -645,19 +650,19 @@ export function CloudApp() {
   const skippedLabel =
     parsed?.skippedRows && parsed.skippedRows > 0
       ? cloudKind === "track"
-        ? ` · ${parsed.skippedRows} rows skipped (no track + artist)`
-        : ` · ${parsed.skippedRows} rows skipped (no album + artist)`
-      : "";
+        ? `${parsed.skippedRows} rows skipped (no track + artist)`
+        : `${parsed.skippedRows} rows skipped (no album + artist)`
+      : null;
 
-  const resolveStats = `${progress.total} processed · ${progress.found} found · ${progress.dropped} dropped`;
-  const statusCopy =
-    phase === "cloud"
-      ? `${visible.length} showing · ${resolveStats}${skippedLabel}`
-      : phase === "resolve"
-        ? "Looking up covers and snippets…"
-        : phase === "empty-match"
-          ? `No snippets matched · ${resolveStats}`
-          : "Create a cloud from Spotify or a listening history export";
+  const showResolveStatus =
+    progress.total > 0 &&
+    (phase === "resolve" || phase === "cloud" || phase === "empty-match");
+  const isResolving = phase === "resolve";
+  const cloudSizeMax = Math.max(1, resolved.length);
+
+  const idleStatusCopy =
+    "Create a cloud from Spotify or a listening history export";
+  const emptyStatusCopy = "No snippets matched";
 
   return (
     <div
@@ -681,12 +686,7 @@ export function CloudApp() {
             <VStack gap={4} width="100%" paddingBlock={0} hAlign="center">
               <Card width="100%" padding={4}>
                 <VStack gap={5} width="100%">
-                  <VStack gap={1} width="100%">
-                    <Text type="supporting">Music Cloud</Text>
-                    <Text type="body" color="secondary">
-                      {statusCopy}
-                    </Text>
-                  </VStack>
+                  <Text type="supporting">Music Cloud</Text>
 
                   <VStack gap={2} width="100%">
                     {hasCloud ? (
@@ -698,26 +698,22 @@ export function CloudApp() {
                           width="100%"
                           onClick={openShare}
                         />
-                        <HStack gap={2} width="100%">
-                          <StackItem size="fill">
-                            <Button
-                              label="Create"
-                              variant="secondary"
-                              icon={<Icon icon={Plus} size="sm" />}
-                              onClick={openCreate}
-                              width="100%"
-                            />
-                          </StackItem>
-                          <StackItem size="fill">
-                            <Button
-                              label="Save"
-                              variant="secondary"
-                              icon={<Icon icon={Download} size="sm" />}
-                              width="100%"
-                              onClick={openSave}
-                            />
-                          </StackItem>
-                        </HStack>
+                        <Grid columns={2} gap={2} width="100%">
+                          <Button
+                            label="Create"
+                            variant="secondary"
+                            icon={<Icon icon={Plus} size="sm" />}
+                            onClick={openCreate}
+                            width="100%"
+                          />
+                          <Button
+                            label="Save"
+                            variant="secondary"
+                            icon={<Icon icon={Download} size="sm" />}
+                            width="100%"
+                            onClick={openSave}
+                          />
+                        </Grid>
                       </>
                     ) : (
                       <Button
@@ -730,17 +726,64 @@ export function CloudApp() {
                     )}
                   </VStack>
 
+                  {showResolveStatus ? (
+                    <VStack gap={2} width="100%">
+                      {phase === "empty-match" ? (
+                        <Text type="body" color="secondary">
+                          {emptyStatusCopy}
+                        </Text>
+                      ) : null}
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot
+                          variant="accent"
+                          label="Processed"
+                          isPulsing={isResolving}
+                        />
+                        <Text type="body" color="secondary">
+                          {progress.done}/{progress.total} processed
+                        </Text>
+                      </HStack>
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot variant="success" label="Found" />
+                        <Text type="body" color="secondary">
+                          {progress.found} found
+                        </Text>
+                      </HStack>
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot variant="error" label="Not found" />
+                        <Text type="body" color="secondary">
+                          {progress.dropped} not found
+                        </Text>
+                      </HStack>
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot variant="neutral" label="Showing" />
+                        <Text type="body" color="secondary">
+                          {visible.length} showing
+                        </Text>
+                      </HStack>
+                      {skippedLabel ? (
+                        <Text type="supporting" color="secondary">
+                          {skippedLabel}
+                        </Text>
+                      ) : null}
+                    </VStack>
+                  ) : (
+                    <Text type="body" color="secondary">
+                      {idleStatusCopy}
+                    </Text>
+                  )}
+
                   {phase === "cloud" ? (
                     <Collapsible trigger="Customise" defaultIsOpen={false}>
                       <VStack gap={3} width="100%" paddingBlockStart={3}>
                         <Knob
                           label="Cloud size"
-                          hint="How many covers are shown in the cloud."
-                          display={`${Math.min(cloudSize, resolved.length)}`}
+                          hint="How many covers are shown. Defaults to 50 when more are available."
+                          display={`${Math.min(cloudSize, cloudSizeMax)}`}
                           min={1}
-                          max={resolved.length}
+                          max={cloudSizeMax}
                           step={1}
-                          value={Math.min(cloudSize, resolved.length)}
+                          value={Math.min(cloudSize, cloudSizeMax)}
                           onChange={setCloudSize}
                         />
                         <Knob
@@ -752,6 +795,16 @@ export function CloudApp() {
                           step={0.1}
                           value={sizeRatio}
                           onChange={setSizeRatio}
+                        />
+                        <Knob
+                          label="Zoom"
+                          hint="Scales the whole cloud relative to the canvas. Zoom out for breathing room on large clouds."
+                          display={`${Math.round(zoom * 100)}%`}
+                          min={MIN_ZOOM}
+                          max={MAX_ZOOM}
+                          step={0.05}
+                          value={zoom}
+                          onChange={setZoom}
                         />
                       </VStack>
                     </Collapsible>
@@ -931,7 +984,7 @@ export function CloudApp() {
                   <Text type="body" color="secondary">
                     Deezer first (top tracks by popularity), iTunes if there is no
                     match. Each preview is probed; albums without playable audio are
-                    dropped before the cloud renders.
+                    counted as not found before the cloud renders.
                   </Text>
                   <ProgressBar
                     label="Lookup progress"
@@ -939,7 +992,7 @@ export function CloudApp() {
                     max={100}
                     hasValueLabel
                     formatValueLabel={() =>
-                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} dropped`
+                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} not found`
                     }
                   />
                 </VStack>
@@ -950,7 +1003,7 @@ export function CloudApp() {
               <div className="spa-empty">
                 <EmptyState
                   title="No snippets matched"
-                  description="Every album was dropped. A tighter album + artist list matches more often. Nothing is shown without audio."
+                  description="None of the albums were found. A tighter album + artist list matches more often. Nothing is shown without audio."
                   headingLevel={1}
                   actions={
                     !uploadOpen ? (
@@ -967,9 +1020,20 @@ export function CloudApp() {
                 onPointerDown={onCanvasPointerDown}
               >
                 {!audioUnlocked ? (
-                  <div className="spa-hint">
-                    <Text type="supporting">
-                      Click or tap once to enable snippets
+                  <div
+                    className="spa-cloud-unlock"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Click to view cloud and enable audio"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        void enableAudio();
+                      }
+                    }}
+                  >
+                    <Text type="supporting" className="spa-cloud-unlock__label">
+                      Click to view cloud and enable audio
                     </Text>
                   </div>
                 ) : null}
@@ -978,6 +1042,7 @@ export function CloudApp() {
                   items={visible}
                   audioUnlocked={audioUnlocked}
                   sizeRatio={sizeRatio}
+                  zoom={zoom}
                   collisionPad={collisionPad}
                   physics={physics}
                   lockedId={
@@ -1029,31 +1094,27 @@ export function CloudApp() {
               description="Do you want to save your work first?"
               collapsible={false}
             />
-            <HStack gap={2} width="100%">
-              <StackItem size="fill">
-                <Button
-                  label="Save first"
-                  variant="secondary"
-                  width="100%"
-                  onClick={() => {
-                    closeUpload();
-                    openSave();
-                  }}
-                />
-              </StackItem>
-              <StackItem size="fill">
-                <Button
-                  label={
-                    replaceWarningReason === "share"
-                      ? "Open anyway"
-                      : "Create anyway"
-                  }
-                  variant="primary"
-                  width="100%"
-                  onClick={confirmReplaceWarning}
-                />
-              </StackItem>
-            </HStack>
+            <Grid columns={2} gap={2} width="100%">
+              <Button
+                label="Save first"
+                variant="secondary"
+                width="100%"
+                onClick={() => {
+                  closeUpload();
+                  openSave();
+                }}
+              />
+              <Button
+                label={
+                  replaceWarningReason === "share"
+                    ? "Open anyway"
+                    : "Create anyway"
+                }
+                variant="primary"
+                width="100%"
+                onClick={confirmReplaceWarning}
+              />
+            </Grid>
           </VStack>
         ) : (
           <CreateCloudFlow
