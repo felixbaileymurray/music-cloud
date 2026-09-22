@@ -53,7 +53,6 @@ import {
   defaultCloudSize,
   recipientSourceLabel,
   SHARE_HASH_PREFIX,
-  SHARE_URL_MAX_ITEMS,
   type ShareDocumentV1,
 } from "@/lib/share-payload";
 import { unlockAudio } from "@/lib/snippet-player";
@@ -150,14 +149,7 @@ export function CloudApp() {
   const focused = locked ?? hovered;
 
   const visible = useMemo(
-    () =>
-      resolved.slice(
-        0,
-        Math.max(
-          1,
-          Math.min(cloudSize, resolved.length, SHARE_URL_MAX_ITEMS)
-        )
-      ),
+    () => resolved.slice(0, Math.max(1, Math.min(cloudSize, resolved.length))),
     [cloudSize, resolved]
   );
 
@@ -662,7 +654,7 @@ export function CloudApp() {
     progress.total > 0 &&
     (phase === "resolve" || phase === "cloud" || phase === "empty-match");
   const isResolving = phase === "resolve";
-  const cloudSizeMax = Math.min(SHARE_URL_MAX_ITEMS, Math.max(1, resolved.length));
+  const cloudSizeMax = Math.max(1, resolved.length);
 
   const idleStatusCopy =
     "Create a cloud from Spotify or a listening history export";
@@ -710,15 +702,21 @@ export function CloudApp() {
                           </Text>
                         </HStack>
                         <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="success" label="Found" />
+                          <StatusDot variant="neutral" label="Showing" />
                           <Text type="body" color="secondary">
-                            {progress.found}/{progress.total} found
+                            {visible.length} showing
                           </Text>
                         </HStack>
                         <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="warning" label="Dropped" />
+                          <StatusDot variant="success" label="Found" />
                           <Text type="body" color="secondary">
-                            {progress.dropped}/{progress.total} dropped
+                            {progress.found} found
+                          </Text>
+                        </HStack>
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot variant="error" label="Not found" />
+                          <Text type="body" color="secondary">
+                            {progress.dropped} not found
                           </Text>
                         </HStack>
                         {skippedLabel ? (
@@ -777,7 +775,7 @@ export function CloudApp() {
                       <VStack gap={3} width="100%" paddingBlockStart={3}>
                         <Knob
                           label="Cloud size"
-                          hint="How many covers are shown in the cloud (max 50)."
+                          hint="How many covers are shown. Defaults to 50 when more are available."
                           display={`${Math.min(cloudSize, cloudSizeMax)}`}
                           min={1}
                           max={cloudSizeMax}
@@ -973,7 +971,7 @@ export function CloudApp() {
                   <Text type="body" color="secondary">
                     Deezer first (top tracks by popularity), iTunes if there is no
                     match. Each preview is probed; albums without playable audio are
-                    dropped before the cloud renders.
+                    counted as not found before the cloud renders.
                   </Text>
                   <ProgressBar
                     label="Lookup progress"
@@ -981,7 +979,7 @@ export function CloudApp() {
                     max={100}
                     hasValueLabel
                     formatValueLabel={() =>
-                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} dropped`
+                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} not found`
                     }
                   />
                 </VStack>
@@ -992,7 +990,7 @@ export function CloudApp() {
               <div className="spa-empty">
                 <EmptyState
                   title="No snippets matched"
-                  description="Every album was dropped. A tighter album + artist list matches more often. Nothing is shown without audio."
+                  description="None of the albums were found. A tighter album + artist list matches more often. Nothing is shown without audio."
                   headingLevel={1}
                   actions={
                     !uploadOpen ? (
