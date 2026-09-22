@@ -8,6 +8,11 @@ import { Grid } from "@astryxdesign/core/Grid";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
+import { RadioList, RadioListItem } from "@astryxdesign/core/RadioList";
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from "@astryxdesign/core/SegmentedControl";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Disc3, Music2, PenLine, UserRound } from "lucide-react";
@@ -47,6 +52,7 @@ function OptionCard({
   icon,
   isDisabled = false,
   footer,
+  footerAccent = false,
   onClick,
 }: {
   label: string;
@@ -55,6 +61,8 @@ function OptionCard({
   icon: IconComponent;
   isDisabled?: boolean;
   footer?: string | null;
+  /** Bold + success green (WCAG AA on white). Brand Spotify green fails contrast. */
+  footerAccent?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -74,7 +82,12 @@ function OptionCard({
           {description}
         </Text>
         {footer ? (
-          <Text type="supporting" color="secondary">
+          <Text
+            type="supporting"
+            weight={footerAccent ? "bold" : undefined}
+            color={footerAccent ? "inherit" : "secondary"}
+            className={footerAccent ? "text-success" : undefined}
+          >
             {footer}
           </Text>
         ) : null}
@@ -233,6 +246,7 @@ export function CreateCloudFlow({
                 ? `Connected as ${status.displayName}`
                 : null
             }
+            footerAccent={Boolean(status?.connected && status.displayName)}
             onClick={startSpotify}
           />
           <OptionCard
@@ -311,44 +325,37 @@ export function CreateCloudFlow({
   if (step === "spotify-source") {
     return (
       <VStack gap={5} width="100%">
-        <VStack gap={2} width="100%">
-          <Button
-            label="Top tracks"
-            variant={source === "top" ? "primary" : "secondary"}
-            width="100%"
-            onClick={() => setSource("top")}
-          />
+        <VStack gap={4} width="100%">
+          <SegmentedControl
+            label="Track source"
+            value={source}
+            onChange={(value) =>
+              setSource(value as "top" | "recent" | "saved")
+            }
+            layout="fill"
+            size="md"
+          >
+            <SegmentedControlItem value="top" label="Top tracks" />
+            <SegmentedControlItem value="recent" label="Recently played" />
+            <SegmentedControlItem value="saved" label="Recently saved" />
+          </SegmentedControl>
+
           {source === "top" ? (
-            <HStack gap={2} wrap="wrap" width="100%">
-              <Button
-                label="4 weeks"
-                variant={timeRange === "short_term" ? "primary" : "ghost"}
-                onClick={() => setTimeRange("short_term")}
-              />
-              <Button
-                label="6 months"
-                variant={timeRange === "medium_term" ? "primary" : "ghost"}
-                onClick={() => setTimeRange("medium_term")}
-              />
-              <Button
-                label="All time"
-                variant={timeRange === "long_term" ? "primary" : "ghost"}
-                onClick={() => setTimeRange("long_term")}
-              />
-            </HStack>
+            <RadioList
+              label="Time range"
+              value={timeRange}
+              onChange={(value) =>
+                setTimeRange(
+                  value as "short_term" | "medium_term" | "long_term"
+                )
+              }
+              width="100%"
+            >
+              <RadioListItem value="short_term" label="4 weeks" />
+              <RadioListItem value="medium_term" label="6 months" />
+              <RadioListItem value="long_term" label="All time" />
+            </RadioList>
           ) : null}
-          <Button
-            label="Recently played"
-            variant={source === "recent" ? "primary" : "secondary"}
-            width="100%"
-            onClick={() => setSource("recent")}
-          />
-          <Button
-            label="Recently saved"
-            variant={source === "saved" ? "primary" : "secondary"}
-            width="100%"
-            onClick={() => setSource("saved")}
-          />
         </VStack>
         <Button
           label="Build cloud"

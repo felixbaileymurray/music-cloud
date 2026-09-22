@@ -13,14 +13,13 @@ import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
+import { Grid } from "@astryxdesign/core/Grid";
 import { Heading } from "@astryxdesign/core/Heading";
-import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
 import { Text } from "@astryxdesign/core/Text";
-import { StackItem } from "@astryxdesign/core/Stack";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Download, Plus, Share2 } from "lucide-react";
 import { CloudInfoPanel } from "@/components/cloud-info-panel";
@@ -698,26 +697,22 @@ export function CloudApp() {
                           width="100%"
                           onClick={openShare}
                         />
-                        <HStack gap={2} width="100%">
-                          <StackItem size="fill">
-                            <Button
-                              label="Create"
-                              variant="secondary"
-                              icon={<Icon icon={Plus} size="sm" />}
-                              onClick={openCreate}
-                              width="100%"
-                            />
-                          </StackItem>
-                          <StackItem size="fill">
-                            <Button
-                              label="Save"
-                              variant="secondary"
-                              icon={<Icon icon={Download} size="sm" />}
-                              width="100%"
-                              onClick={openSave}
-                            />
-                          </StackItem>
-                        </HStack>
+                        <Grid columns={2} gap={2} width="100%">
+                          <Button
+                            label="Create"
+                            variant="secondary"
+                            icon={<Icon icon={Plus} size="sm" />}
+                            onClick={openCreate}
+                            width="100%"
+                          />
+                          <Button
+                            label="Save"
+                            variant="secondary"
+                            icon={<Icon icon={Download} size="sm" />}
+                            width="100%"
+                            onClick={openSave}
+                          />
+                        </Grid>
                       </>
                     ) : (
                       <Button
@@ -1029,31 +1024,27 @@ export function CloudApp() {
               description="Do you want to save your work first?"
               collapsible={false}
             />
-            <HStack gap={2} width="100%">
-              <StackItem size="fill">
-                <Button
-                  label="Save first"
-                  variant="secondary"
-                  width="100%"
-                  onClick={() => {
-                    closeUpload();
-                    openSave();
-                  }}
-                />
-              </StackItem>
-              <StackItem size="fill">
-                <Button
-                  label={
-                    replaceWarningReason === "share"
-                      ? "Open anyway"
-                      : "Create anyway"
-                  }
-                  variant="primary"
-                  width="100%"
-                  onClick={confirmReplaceWarning}
-                />
-              </StackItem>
-            </HStack>
+            <Grid columns={2} gap={2} width="100%">
+              <Button
+                label="Save first"
+                variant="secondary"
+                width="100%"
+                onClick={() => {
+                  closeUpload();
+                  openSave();
+                }}
+              />
+              <Button
+                label={
+                  replaceWarningReason === "share"
+                    ? "Open anyway"
+                    : "Create anyway"
+                }
+                variant="primary"
+                width="100%"
+                onClick={confirmReplaceWarning}
+              />
+            </Grid>
           </VStack>
         ) : (
           <CreateCloudFlow
