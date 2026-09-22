@@ -30,6 +30,7 @@ import {
   DEFAULT_CLOUD_PHYSICS,
   type CloudPhysics,
 } from "@/components/cover-cloud";
+import { SaveModal } from "@/components/save-modal";
 import { ShareModal } from "@/components/share-modal";
 import { UploadModal } from "@/components/upload-modal";
 import {
@@ -80,6 +81,9 @@ const DEFAULT_COVER_FRAME = 5;
 export function CloudApp() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [exportNeutral, setExportNeutral] = useState(false);
+  const cloudFrameRef = useRef<HTMLDivElement | null>(null);
   const [createModalTitle, setCreateModalTitle] = useState("Create Cloud");
   const [createFlowKey, setCreateFlowKey] = useState(0);
   const [createGate, setCreateGate] = useState<"warning" | "flow">("flow");
@@ -612,6 +616,27 @@ export function CloudApp() {
     setReplaceWarningReason("create");
   }
 
+  function openSave() {
+    setSaveOpen(true);
+  }
+
+  function closeSave() {
+    setSaveOpen(false);
+    setExportNeutral(false);
+  }
+
+  async function prepareNeutralCapture() {
+    setExportNeutral(true);
+    setHovered(null);
+    setHoverPreview(null);
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => resolve());
+      });
+    });
+    return () => setExportNeutral(false);
+  }
+
   const focusedClip =
     focused && hitsMatchFocus(cloudKind, focused, hoverPreview)
       ? hoverPreview!.clip
@@ -689,6 +714,7 @@ export function CloudApp() {
                               variant="secondary"
                               icon={<Icon icon={Download} size="sm" />}
                               width="100%"
+                              onClick={openSave}
                             />
                           </StackItem>
                         </HStack>
@@ -955,8 +981,14 @@ export function CloudApp() {
                   collisionPad={collisionPad}
                   physics={physics}
                   lockedId={
-                    locked ? cloudNodeId(cloudKind, locked) : null
+                    exportNeutral
+                      ? null
+                      : locked
+                        ? cloudNodeId(cloudKind, locked)
+                        : null
                   }
+                  neutralVisuals={exportNeutral}
+                  frameRef={cloudFrameRef}
                   exploreResetToken={exploreResetToken}
                   onHoverChange={setHovered}
                   onLockToggle={lockCloud}
@@ -967,6 +999,15 @@ export function CloudApp() {
           </div>
         </LayoutContent>
       </Layout>
+
+      <SaveModal
+        open={saveOpen}
+        cloudKind={cloudKind}
+        document={shareDocument}
+        getCloudFrame={() => cloudFrameRef.current}
+        prepareNeutralCapture={prepareNeutralCapture}
+        onClose={closeSave}
+      />
 
       <UploadModal
         open={uploadOpen}
@@ -994,7 +1035,10 @@ export function CloudApp() {
                   label="Save first"
                   variant="secondary"
                   width="100%"
-                  onClick={closeUpload}
+                  onClick={() => {
+                    closeUpload();
+                    openSave();
+                  }}
                 />
               </StackItem>
               <StackItem size="fill">

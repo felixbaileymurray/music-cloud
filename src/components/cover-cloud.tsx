@@ -9,8 +9,14 @@ import {
   forceY,
   type Simulation,
 } from "d3-force";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { ClipRef, CloudHit, CloudKind } from "@/lib/types";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
+import type { CloudHit, CloudKind } from "@/lib/types";
 import {
   cloudNodeId,
   cloudNodeLabel,
@@ -144,6 +150,12 @@ function clampNodeToBounds(
   node.y = Math.max(r, Math.min(maxY, node.y ?? r));
 }
 
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (!ref) return;
+  if (typeof ref === "function") ref(value);
+  else ref.current = value;
+}
+
 export function CoverCloud({
   cloudKind,
   items,
@@ -153,6 +165,9 @@ export function CoverCloud({
   physics = DEFAULT_CLOUD_PHYSICS,
   lockedId = null,
   exploreResetToken = 0,
+  /** Strip hover swell, dimming, and lock emphasis for a clean export. */
+  neutralVisuals = false,
+  frameRef: frameRefProp,
   onHoverChange,
   onLockToggle,
   onPreviewChange,
@@ -165,6 +180,8 @@ export function CoverCloud({
   physics?: CloudPhysics;
   lockedId?: string | null;
   exploreResetToken?: number;
+  neutralVisuals?: boolean;
+  frameRef?: Ref<HTMLDivElement | null>;
   onHoverChange?: (hit: CloudHit | null) => void;
   onLockToggle?: (hit: CloudHit) => void;
   onPreviewChange?: (preview: HoverPreview | null) => void;
@@ -185,6 +202,12 @@ export function CoverCloud({
   collisionPadRef.current = collisionPad;
   hoverReheatRef.current = physics.hoverReheat;
   onPreviewChangeRef.current = onPreviewChange;
+
+  useEffect(() => {
+    if (!neutralVisuals) return;
+    hoverIdRef.current = null;
+    void stopSnippet();
+  }, [neutralVisuals]);
 
   const sized = useMemo(() => {
     if (items.length === 0) return [];
@@ -401,13 +424,21 @@ export function CoverCloud({
   }
 
   return (
-    <div ref={frameRef} className="cover-cloud">
+    <div
+      ref={(node) => {
+        frameRef.current = node;
+        assignRef(frameRefProp, node);
+      }}
+      className="cover-cloud"
+    >
       {nodes.map((node) => {
-        const isHovered = hoveredId === node.id;
-        const isLocked = lockedId === node.id;
+        const isHovered = !neutralVisuals && hoveredId === node.id;
+        const isLocked = !neutralVisuals && lockedId === node.id;
         const emphasized = isHovered || isLocked;
         const dimmed =
-          (hoveredId !== null || lockedId !== null) && !emphasized;
+          !neutralVisuals &&
+          (hoveredId !== null || lockedId !== null) &&
+          !emphasized;
         // Keep swell while locked so leaving the cover doesn't "hover away".
         const displayR = node.r * (isHovered || isLocked ? SWELL : 1);
         return (
@@ -417,15 +448,15 @@ export function CoverCloud({
             aria-label={cloudNodeLabel(cloudKind, node)}
             aria-pressed={isLocked}
             onPointerEnter={(event) => {
-              if (event.pointerType === "touch") return;
+              if (neutralVisuals || event.pointerType === "touch") return;
               beginHover(node);
             }}
             onPointerLeave={(event) => {
-              if (event.pointerType === "touch") return;
+              if (neutralVisuals || event.pointerType === "touch") return;
               endHover(node);
             }}
             onPointerDown={(event) => {
-              if (event.pointerType !== "touch") return;
+              if (neutralVisuals || event.pointerType !== "touch") return;
               event.preventDefault();
               if (lockedIdRef.current && lockedIdRef.current !== node.id) {
                 return;
@@ -439,6 +470,7 @@ export function CoverCloud({
             }}
             onClick={(event) => {
               event.stopPropagation();
+              if (neutralVisuals) return;
               if (lockedIdRef.current && lockedIdRef.current !== node.id) {
                 return;
               }
@@ -461,6 +493,7 @@ export function CoverCloud({
             <img
               alt=""
               src={node.coverUrl}
+              crossOrigin="anonymous"
               draggable={false}
               className="cover-cloud__img"
             />

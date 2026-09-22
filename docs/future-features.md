@@ -4,17 +4,16 @@ Notes for later branches. Prefer shipping UI and real behavior together rather t
 
 ## Save / export modal
 
-Sidebar **Save** (ghost icon when a cloud exists) should open its own export modal with:
+**Shipped on `feat/save`.** Sidebar **Save** opens a modal with:
 
-- Image type: `.png` / `.jpeg`
-- Resolution presets
-- Option to download a **backup flat-list file** in the same shape as a manual import, so users can re-create the cloud later without re-matching
+- Image export: PNG/JPEG/WebP, resolution Low/Medium/High (1×/2×/3×), cloud-canvas-only capture (neutral visuals, current aspect ratio, solid canvas background)
+- JSON snapshot: same flat-list document as Share (`ShareDocumentV1` of visible items), re-open via Create upload
 
-Implement the modal UI and working export in one branch.
+Filenames include kind and date.
 
 ## Share
 
-**Shipped on `feat/share`.** Sidebar **Share** opens a modal with Copy share URL (up to 50 items), Download JSON (any size), and Open share file. Links embed a compressed flat list in the URL hash; larger clouds use the JSON file only.
+**Shipped on `feat/share`.** Sidebar **Share** opens a modal with Copy share URL (up to 50 items) and Download JSON (any size). Links embed a compressed flat list in the URL hash; larger clouds use the JSON file only. Share JSON can also be re-opened through Create upload.
 
 Mental model:
 

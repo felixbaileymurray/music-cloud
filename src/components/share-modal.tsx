@@ -7,7 +7,7 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { Download, Link2 } from "lucide-react";
+import { FileJson, Link2 } from "lucide-react";
 import { UploadModal } from "@/components/upload-modal";
 import type { CloudKind } from "@/lib/types";
 import {
@@ -133,7 +133,7 @@ export function ShareModal({
             <Button
               label="Download JSON"
               variant="secondary"
-              icon={<Icon icon={Download} size="sm" />}
+              icon={<Icon icon={FileJson} size="sm" />}
               onClick={downloadJson}
             />
           </HStack>
