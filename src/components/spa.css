@@ -40,6 +40,29 @@
   height: 100%;
 }
 
+/* Same treatment as Dialog ::backdrop — scoped to the cloud canvas only. */
+.spa-cloud-unlock {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4);
+  background: var(--color-overlay);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.spa-cloud-unlock__label {
+  margin: 0;
+  padding: var(--spacing-2) var(--spacing-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-background-surface);
+  pointer-events: none;
+}
+
 .spa-empty,
 .spa-status {
   display: flex;
@@ -50,25 +73,6 @@
   max-width: 28rem;
   margin: 0 auto;
   padding: var(--spacing-4);
-}
-
-.spa-hint {
-  position: absolute;
-  inset-inline: 0;
-  top: var(--spacing-3);
-  z-index: var(--z-dropdown);
-  display: flex;
-  justify-content: center;
-  padding: 0 var(--spacing-4);
-  pointer-events: none;
-}
-
-.spa-hint > * {
-  margin: 0;
-  padding: var(--spacing-1) var(--spacing-3);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-background-surface);
 }
 
 @keyframes album-preview-pulse {

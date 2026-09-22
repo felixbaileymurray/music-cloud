@@ -9,8 +9,20 @@ import {
   forceY,
   type Simulation,
 } from "d3-force";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { ClipRef, PreviewHit } from "@/lib/types";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
+import type { CloudHit, CloudKind } from "@/lib/types";
+import {
+  cloudNodeId,
+  cloudNodeLabel,
+  hoverPreviewFromHit,
+  type HoverPreview,
+} from "@/lib/cloud-node";
 import {
   playSnippet,
   prefetchSnippet,
@@ -18,7 +30,7 @@ import {
 } from "@/lib/snippet-player";
 import "@/components/spa.css";
 
-type CloudNode = PreviewHit & {
+type CloudNode = CloudHit & {
   id: string;
   r: number;
   x: number;
@@ -38,6 +50,8 @@ export type CloudPhysics = {
   chargeStrength: number;
   alphaDecay: number;
   collideIterations: number;
+  collideStrength: number;
+  hoverReheat: number;
   boundaryStrength: number;
 };
 
@@ -46,7 +60,9 @@ export const DEFAULT_CLOUD_PHYSICS: CloudPhysics = {
   centerStrengthMass: 0.3,
   chargeStrength: -10,
   alphaDecay: 0.08,
-  collideIterations: 6,
+  collideIterations: 3,
+  collideStrength: 0.7,
+  hoverReheat: 0.2,
   boundaryStrength: 1,
 };
 
@@ -54,24 +70,26 @@ export const DEFAULT_CLOUD_PHYSICS: CloudPhysics = {
  * Prefer listen counts when they vary. Otherwise fall back to list rank so
  * datasets without play counts still get a continuous size hierarchy.
  */
-function sizeWeights(albums: PreviewHit[]): number[] {
-  const counts = albums.map((album) => album.listenCount);
+function sizeWeights(items: CloudHit[]): number[] {
+  const counts = items.map((item) => item.listenCount);
   const minCount = Math.min(...counts);
   const maxCount = Math.max(...counts);
   if (maxCount > minCount) return counts;
-  const n = albums.length;
-  return albums.map((_, index) => n - index);
+  const n = items.length;
+  return items.map((_, index) => n - index);
 }
 
 function radiusFor(
   weight: number,
   minWeight: number,
   maxWeight: number,
-  sizeRatio: number
+  sizeRatio: number,
+  zoom: number
 ) {
   const ratio = Math.max(1, sizeRatio);
-  const minR = MIN_RADIUS;
-  const maxR = MIN_RADIUS * ratio;
+  const scale = Math.max(0.1, zoom);
+  const minR = MIN_RADIUS * scale;
+  const maxR = MIN_RADIUS * ratio * scale;
   if (maxWeight === minWeight) return (minR + maxR) / 2;
   const t =
     (Math.sqrt(weight) - Math.sqrt(minWeight)) /
@@ -134,30 +152,44 @@ function clampNodeToBounds(
   node.y = Math.max(r, Math.min(maxY, node.y ?? r));
 }
 
+function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (!ref) return;
+  if (typeof ref === "function") ref(value);
+  else ref.current = value;
+}
+
 export function CoverCloud({
-  albums,
+  cloudKind,
+  items,
   audioUnlocked,
   sizeRatio = 4,
+  zoom = 1,
   collisionPad = 10,
   physics = DEFAULT_CLOUD_PHYSICS,
   lockedId = null,
   exploreResetToken = 0,
+  /** Strip hover swell, dimming, and lock emphasis for a clean export. */
+  neutralVisuals = false,
+  frameRef: frameRefProp,
   onHoverChange,
   onLockToggle,
   onPreviewChange,
 }: {
-  albums: PreviewHit[];
+  cloudKind: CloudKind;
+  items: CloudHit[];
   audioUnlocked: boolean;
   sizeRatio?: number;
+  /** Scales all covers vs the canvas. 1 = current default. Lower = more breathing room. */
+  zoom?: number;
   collisionPad?: number;
   physics?: CloudPhysics;
   lockedId?: string | null;
   exploreResetToken?: number;
-  onHoverChange?: (album: PreviewHit | null) => void;
-  onLockToggle?: (album: PreviewHit) => void;
-  onPreviewChange?: (
-    preview: { album: string; artist: string; clip: ClipRef } | null
-  ) => void;
+  neutralVisuals?: boolean;
+  frameRef?: Ref<HTMLDivElement | null>;
+  onHoverChange?: (hit: CloudHit | null) => void;
+  onLockToggle?: (hit: CloudHit) => void;
+  onPreviewChange?: (preview: HoverPreview | null) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const simRef = useRef<Simulation<CloudNode, undefined> | null>(null);
@@ -167,26 +199,35 @@ export function CoverCloud({
   const playingIdRef = useRef<string | null>(null);
   const onPreviewChangeRef = useRef(onPreviewChange);
   const collisionPadRef = useRef(collisionPad);
+  const hoverReheatRef = useRef(physics.hoverReheat);
   const [nodes, setNodes] = useState<CloudNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
 
-  collisionPadRef.current = collisionPad;
+  // Keep pad proportional to cover size so zoom-out doesn't inflate gaps.
+  collisionPadRef.current = collisionPad * Math.max(0.1, zoom);
+  hoverReheatRef.current = physics.hoverReheat;
   onPreviewChangeRef.current = onPreviewChange;
 
+  useEffect(() => {
+    if (!neutralVisuals) return;
+    hoverIdRef.current = null;
+    void stopSnippet();
+  }, [neutralVisuals]);
+
   const sized = useMemo(() => {
-    if (albums.length === 0) return [];
-    const weights = sizeWeights(albums);
+    if (items.length === 0) return [];
+    const weights = sizeWeights(items);
     const minWeight = Math.min(...weights);
     const maxWeight = Math.max(...weights);
-    return albums.map((album, index) => ({
-      ...album,
-      id: `${album.artist}::${album.album}`,
-      r: radiusFor(weights[index], minWeight, maxWeight, sizeRatio),
+    return items.map((item, index) => ({
+      ...item,
+      id: cloudNodeId(cloudKind, item),
+      r: radiusFor(weights[index], minWeight, maxWeight, sizeRatio, zoom),
       x: size.width / 2,
       y: size.height / 2,
     }));
-  }, [albums, size.height, size.width, sizeRatio]);
+  }, [cloudKind, items, size.height, size.width, sizeRatio, zoom]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -206,13 +247,14 @@ export function CoverCloud({
   useEffect(() => {
     const cx = size.width / 2;
     const cy = size.height / 2;
-    const pad = collisionPad;
+    const pad = collisionPad * Math.max(0.1, zoom);
     const {
       centerStrengthBase,
       centerStrengthMass,
       chargeStrength,
       alphaDecay,
       collideIterations,
+      collideStrength,
       boundaryStrength,
     } = physics;
     const radii = sized.map((node) => node.r);
@@ -254,6 +296,7 @@ export function CoverCloud({
             const swell = hoverIdRef.current === node.id ? SWELL : 1;
             return node.r * swell + pad;
           })
+          .strength(collideStrength)
           .iterations(collideIterations)
       )
       .force(
@@ -275,7 +318,7 @@ export function CoverCloud({
       simulation.stop();
       simRef.current = null;
     };
-  }, [sized, size.height, size.width, collisionPad, physics]);
+  }, [sized, size.height, size.width, collisionPad, zoom, physics]);
 
   useEffect(() => {
     hoverIdRef.current = hoveredId;
@@ -288,7 +331,8 @@ export function CoverCloud({
       const swell = hoverIdRef.current === node.id ? SWELL : 1;
       return node.r * swell + collisionPadRef.current;
     });
-    simulation.alpha(0.35).restart();
+    const alpha = Math.max(simulation.alpha(), hoverReheatRef.current);
+    simulation.alpha(alpha).restart();
   }, [hoveredId]);
 
   useEffect(() => {
@@ -338,7 +382,7 @@ export function CoverCloud({
     const clip = node.clips[next % node.clips.length];
     cycleRef.current.set(node.id, next + 1);
     playingIdRef.current = node.id;
-    onPreviewChange?.({ album: node.album, artist: node.artist, clip });
+    onPreviewChange?.(hoverPreviewFromHit(cloudKind, node, clip));
     for (const other of node.clips) {
       void prefetchSnippet(other);
     }
@@ -386,31 +430,39 @@ export function CoverCloud({
   }
 
   return (
-    <div ref={frameRef} className="cover-cloud">
+    <div
+      ref={(node) => {
+        frameRef.current = node;
+        assignRef(frameRefProp, node);
+      }}
+      className="cover-cloud"
+    >
       {nodes.map((node) => {
-        const isHovered = hoveredId === node.id;
-        const isLocked = lockedId === node.id;
+        const isHovered = !neutralVisuals && hoveredId === node.id;
+        const isLocked = !neutralVisuals && lockedId === node.id;
         const emphasized = isHovered || isLocked;
         const dimmed =
-          (hoveredId !== null || lockedId !== null) && !emphasized;
+          !neutralVisuals &&
+          (hoveredId !== null || lockedId !== null) &&
+          !emphasized;
         // Keep swell while locked so leaving the cover doesn't "hover away".
         const displayR = node.r * (isHovered || isLocked ? SWELL : 1);
         return (
           <button
             key={node.id}
             type="button"
-            aria-label={`${node.album} by ${node.artist}`}
+            aria-label={cloudNodeLabel(cloudKind, node)}
             aria-pressed={isLocked}
             onPointerEnter={(event) => {
-              if (event.pointerType === "touch") return;
+              if (neutralVisuals || event.pointerType === "touch") return;
               beginHover(node);
             }}
             onPointerLeave={(event) => {
-              if (event.pointerType === "touch") return;
+              if (neutralVisuals || event.pointerType === "touch") return;
               endHover(node);
             }}
             onPointerDown={(event) => {
-              if (event.pointerType !== "touch") return;
+              if (neutralVisuals || event.pointerType !== "touch") return;
               event.preventDefault();
               if (lockedIdRef.current && lockedIdRef.current !== node.id) {
                 return;
@@ -424,6 +476,7 @@ export function CoverCloud({
             }}
             onClick={(event) => {
               event.stopPropagation();
+              if (neutralVisuals) return;
               if (lockedIdRef.current && lockedIdRef.current !== node.id) {
                 return;
               }
@@ -446,6 +499,7 @@ export function CoverCloud({
             <img
               alt=""
               src={node.coverUrl}
+              crossOrigin="anonymous"
               draggable={false}
               className="cover-cloud__img"
             />

@@ -9,6 +9,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  // Spotify redirect URI and README use 127.0.0.1; Next advertises localhost.
+  allowedDevOrigins: ["127.0.0.1"],
 };
 
 export default nextConfig;

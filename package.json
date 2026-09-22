@@ -1,6 +1,6 @@
 {
   "name": "music-cloud",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0 --port 43217",
@@ -17,6 +17,7 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.3.0",
     "d3-force": "^3.0.0",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^1.46.0",
     "next": "16.3.5",
     "react": "19.2.8",
@@ -38,5 +39,10 @@
   },
   "astryx": {
     "theme": "@astryxdesign/theme-neutral"
+  },
+  "allowScripts": {
+    "@astryxdesign/cli": true,
+    "@astryxdesign/core": true,
+    "unrs-resolver": true
   }
 }

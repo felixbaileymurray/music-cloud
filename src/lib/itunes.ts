@@ -6,6 +6,9 @@ import type {
   AlbumTrack,
   ClipRef,
   PreviewMatch,
+  TrackDetails,
+  TrackPreviewMatch,
+  TrackQuery,
 } from "@/lib/types";
 
 type ItunesAlbum = {
@@ -26,6 +29,10 @@ type ItunesTrack = {
   kind?: string;
   previewUrl?: string;
   trackName?: string;
+  artistName?: string;
+  collectionName?: string;
+  artworkUrl100?: string;
+  releaseDate?: string;
   trackNumber?: number;
   trackTimeMillis?: number;
 };
@@ -162,12 +169,78 @@ export async function lookupItunesAlbumDetails(
     album: collection.collectionName || album.collectionName,
     artist: collection.artistName || album.artistName,
     coverUrl,
-    genre: collection.primaryGenreName?.trim() || undefined,
+    genres: collection.primaryGenreName?.trim()
+      ? [collection.primaryGenreName.trim()]
+      : undefined,
     releaseDate: collection.releaseDate?.slice(0, 10) || undefined,
     label: collection.copyright?.trim() || undefined,
     trackCount: collection.trackCount ?? tracks.length,
     durationSec: durationSec > 0 ? durationSec : undefined,
     tracks,
+    source: "itunes",
+  };
+}
+
+async function findItunesTrack(query: TrackQuery): Promise<ItunesTrack | null> {
+  const term = encodeURIComponent(`${query.track} ${query.artist}`);
+  const search = await itunesJson<{ results?: ItunesTrack[] }>(
+    `https://itunes.apple.com/search?term=${term}&entity=song&limit=8`
+  );
+  const match = (search.results ?? []).find(
+    (result) =>
+      namesMatch(result.trackName ?? "", query.track) &&
+      namesMatch(result.artistName ?? "", query.artist)
+  );
+  return match ?? null;
+}
+
+type ItunesTrackSearch = ItunesTrack & {
+  artistName?: string;
+  collectionName?: string;
+  artworkUrl100?: string;
+  releaseDate?: string;
+};
+
+export async function lookupItunesTrack(
+  query: TrackQuery
+): Promise<TrackPreviewMatch | null> {
+  const track = (await findItunesTrack(query)) as ItunesTrackSearch | null;
+  if (!track?.previewUrl) return null;
+
+  const ok = await previewUrlPlayable(track.previewUrl);
+  if (!ok) return null;
+
+  const coverUrl = itunesArtwork(track.artworkUrl100);
+  if (!coverUrl) return null;
+
+  return {
+    coverUrl,
+    track: track.trackName?.trim() || query.track,
+    artist: track.artistName?.trim() || query.artist,
+    album: track.collectionName?.trim() || query.album,
+    clips: [{ kind: "itunes", url: track.previewUrl }],
+  };
+}
+
+export async function lookupItunesTrackDetails(
+  query: TrackQuery
+): Promise<TrackDetails | null> {
+  const track = (await findItunesTrack(query)) as ItunesTrackSearch | null;
+  if (!track) return null;
+
+  const coverUrl = itunesArtwork(track.artworkUrl100);
+  if (!coverUrl) return null;
+
+  return {
+    track: track.trackName?.trim() || query.track,
+    artist: track.artistName?.trim() || query.artist,
+    album: track.collectionName?.trim() || query.album,
+    coverUrl,
+    durationSec:
+      typeof track.trackTimeMillis === "number" && track.trackTimeMillis > 0
+        ? Math.round(track.trackTimeMillis / 1000)
+        : undefined,
+    releaseDate: track.releaseDate?.slice(0, 10) || undefined,
     source: "itunes",
   };
 }
