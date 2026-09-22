@@ -15,10 +15,12 @@ import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Grid } from "@astryxdesign/core/Grid";
 import { Heading } from "@astryxdesign/core/Heading";
+import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
+import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Download, Plus, Share2 } from "lucide-react";
@@ -51,6 +53,7 @@ import {
   defaultCloudSize,
   recipientSourceLabel,
   SHARE_HASH_PREFIX,
+  SHARE_URL_MAX_ITEMS,
   type ShareDocumentV1,
 } from "@/lib/share-payload";
 import { unlockAudio } from "@/lib/snippet-player";
@@ -147,7 +150,14 @@ export function CloudApp() {
   const focused = locked ?? hovered;
 
   const visible = useMemo(
-    () => resolved.slice(0, Math.max(1, Math.min(cloudSize, resolved.length))),
+    () =>
+      resolved.slice(
+        0,
+        Math.max(
+          1,
+          Math.min(cloudSize, resolved.length, SHARE_URL_MAX_ITEMS)
+        )
+      ),
     [cloudSize, resolved]
   );
 
@@ -644,19 +654,19 @@ export function CloudApp() {
   const skippedLabel =
     parsed?.skippedRows && parsed.skippedRows > 0
       ? cloudKind === "track"
-        ? ` · ${parsed.skippedRows} rows skipped (no track + artist)`
-        : ` · ${parsed.skippedRows} rows skipped (no album + artist)`
-      : "";
+        ? `${parsed.skippedRows} rows skipped (no track + artist)`
+        : `${parsed.skippedRows} rows skipped (no album + artist)`
+      : null;
 
-  const resolveStats = `${progress.total} processed · ${progress.found} found · ${progress.dropped} dropped`;
-  const statusCopy =
-    phase === "cloud"
-      ? `${visible.length} showing · ${resolveStats}${skippedLabel}`
-      : phase === "resolve"
-        ? "Looking up covers and snippets…"
-        : phase === "empty-match"
-          ? `No snippets matched · ${resolveStats}`
-          : "Create a cloud from Spotify or a listening history export";
+  const showResolveStatus =
+    progress.total > 0 &&
+    (phase === "resolve" || phase === "cloud" || phase === "empty-match");
+  const isResolving = phase === "resolve";
+  const cloudSizeMax = Math.min(SHARE_URL_MAX_ITEMS, Math.max(1, resolved.length));
+
+  const idleStatusCopy =
+    "Create a cloud from Spotify or a listening history export";
+  const emptyStatusCopy = "No snippets matched";
 
   return (
     <div
@@ -682,9 +692,46 @@ export function CloudApp() {
                 <VStack gap={5} width="100%">
                   <VStack gap={1} width="100%">
                     <Text type="supporting">Music Cloud</Text>
-                    <Text type="body" color="secondary">
-                      {statusCopy}
-                    </Text>
+                    {showResolveStatus ? (
+                      <VStack gap={2} width="100%">
+                        {phase === "empty-match" ? (
+                          <Text type="body" color="secondary">
+                            {emptyStatusCopy}
+                          </Text>
+                        ) : null}
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot
+                            variant="accent"
+                            label="Processed"
+                            isPulsing={isResolving}
+                          />
+                          <Text type="body" color="secondary">
+                            {progress.done}/{progress.total} processed
+                          </Text>
+                        </HStack>
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot variant="success" label="Found" />
+                          <Text type="body" color="secondary">
+                            {progress.found}/{progress.total} found
+                          </Text>
+                        </HStack>
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot variant="warning" label="Dropped" />
+                          <Text type="body" color="secondary">
+                            {progress.dropped}/{progress.total} dropped
+                          </Text>
+                        </HStack>
+                        {skippedLabel ? (
+                          <Text type="supporting" color="secondary">
+                            {skippedLabel}
+                          </Text>
+                        ) : null}
+                      </VStack>
+                    ) : (
+                      <Text type="body" color="secondary">
+                        {idleStatusCopy}
+                      </Text>
+                    )}
                   </VStack>
 
                   <VStack gap={2} width="100%">
@@ -730,12 +777,12 @@ export function CloudApp() {
                       <VStack gap={3} width="100%" paddingBlockStart={3}>
                         <Knob
                           label="Cloud size"
-                          hint="How many covers are shown in the cloud."
-                          display={`${Math.min(cloudSize, resolved.length)}`}
+                          hint="How many covers are shown in the cloud (max 50)."
+                          display={`${Math.min(cloudSize, cloudSizeMax)}`}
                           min={1}
-                          max={resolved.length}
+                          max={cloudSizeMax}
                           step={1}
-                          value={Math.min(cloudSize, resolved.length)}
+                          value={Math.min(cloudSize, cloudSizeMax)}
                           onChange={setCloudSize}
                         />
                         <Knob
