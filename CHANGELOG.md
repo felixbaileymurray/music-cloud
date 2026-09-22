@@ -7,13 +7,15 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## 0.1.0
 
-Baseline release on `main` — first tagged cut while the product is still pre-ship.
+Initial release on main.
 
-### Added
+Music cloud is a music visualisation and discovery app.
 
-- Album cover-art cloud as the primary listening library
-- Single-page shell with history upload modal and Astryx-themed controls
-- Sidebar album panel with hover details and click-to-lock focus
-- Preview snippets that cycle while an album is hovered or locked
-- Deezer-backed preview lookup with caching and playability probing
-- Tuned cloud physics defaults and force boundary inset
+This first release focuses on an album view, and introduces the core building blocks:
+
+- An interactive canvas
+- Dynamic cloud physics
+- Album cover and metadata display
+- Audio retrieval and playback
+- Astryx design system integration
+- Basic onboarding / cloud creation journey
