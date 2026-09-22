@@ -686,55 +686,7 @@ export function CloudApp() {
             <VStack gap={4} width="100%" paddingBlock={0} hAlign="center">
               <Card width="100%" padding={4}>
                 <VStack gap={5} width="100%">
-                  <VStack gap={1} width="100%">
-                    <Text type="supporting">Music Cloud</Text>
-                    {showResolveStatus ? (
-                      <VStack gap={2} width="100%">
-                        {phase === "empty-match" ? (
-                          <Text type="body" color="secondary">
-                            {emptyStatusCopy}
-                          </Text>
-                        ) : null}
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot
-                            variant="accent"
-                            label="Processed"
-                            isPulsing={isResolving}
-                          />
-                          <Text type="body" color="secondary">
-                            {progress.done}/{progress.total} processed
-                          </Text>
-                        </HStack>
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="neutral" label="Showing" />
-                          <Text type="body" color="secondary">
-                            {visible.length} showing
-                          </Text>
-                        </HStack>
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="success" label="Found" />
-                          <Text type="body" color="secondary">
-                            {progress.found} found
-                          </Text>
-                        </HStack>
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="error" label="Not found" />
-                          <Text type="body" color="secondary">
-                            {progress.dropped} not found
-                          </Text>
-                        </HStack>
-                        {skippedLabel ? (
-                          <Text type="supporting" color="secondary">
-                            {skippedLabel}
-                          </Text>
-                        ) : null}
-                      </VStack>
-                    ) : (
-                      <Text type="body" color="secondary">
-                        {idleStatusCopy}
-                      </Text>
-                    )}
-                  </VStack>
+                  <Text type="supporting">Music Cloud</Text>
 
                   <VStack gap={2} width="100%">
                     {hasCloud ? (
@@ -773,6 +725,53 @@ export function CloudApp() {
                       />
                     )}
                   </VStack>
+
+                  {showResolveStatus ? (
+                    <VStack gap={2} width="100%">
+                      {phase === "empty-match" ? (
+                        <Text type="body" color="secondary">
+                          {emptyStatusCopy}
+                        </Text>
+                      ) : null}
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot
+                          variant="accent"
+                          label="Processed"
+                          isPulsing={isResolving}
+                        />
+                        <Text type="body" color="secondary">
+                          {progress.done}/{progress.total} processed
+                        </Text>
+                      </HStack>
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot variant="neutral" label="Showing" />
+                        <Text type="body" color="secondary">
+                          {visible.length} showing
+                        </Text>
+                      </HStack>
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot variant="success" label="Found" />
+                        <Text type="body" color="secondary">
+                          {progress.found} found
+                        </Text>
+                      </HStack>
+                      <HStack gap={2} align="center" width="100%">
+                        <StatusDot variant="error" label="Not found" />
+                        <Text type="body" color="secondary">
+                          {progress.dropped} not found
+                        </Text>
+                      </HStack>
+                      {skippedLabel ? (
+                        <Text type="supporting" color="secondary">
+                          {skippedLabel}
+                        </Text>
+                      ) : null}
+                    </VStack>
+                  ) : (
+                    <Text type="body" color="secondary">
+                      {idleStatusCopy}
+                    </Text>
+                  )}
 
                   {phase === "cloud" ? (
                     <Collapsible trigger="Customise" defaultIsOpen={false}>
@@ -1021,9 +1020,20 @@ export function CloudApp() {
                 onPointerDown={onCanvasPointerDown}
               >
                 {!audioUnlocked ? (
-                  <div className="spa-hint">
-                    <Text type="supporting">
-                      Click or tap once to enable snippets
+                  <div
+                    className="spa-cloud-unlock"
+                    role="button"
+                    tabIndex={0}
+                    aria-label="Click to view cloud and enable audio"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        void enableAudio();
+                      }
+                    }}
+                  >
+                    <Text type="supporting" className="spa-cloud-unlock__label">
+                      Click to view cloud and enable audio
                     </Text>
                   </div>
                 ) : null}
