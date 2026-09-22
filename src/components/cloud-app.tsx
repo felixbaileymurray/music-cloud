@@ -76,6 +76,9 @@ const DEFAULT_CLOUD = 50;
 const DEFAULT_SIZE_RATIO = 4;
 const MIN_SIZE_RATIO = 1;
 const MAX_SIZE_RATIO = 6;
+const DEFAULT_ZOOM = 1;
+const MIN_ZOOM = 0.4;
+const MAX_ZOOM = 1.6;
 const DEFAULT_COLLISION_PAD = 10;
 const DEFAULT_COVER_FRAME = 5;
 
@@ -107,6 +110,7 @@ export function CloudApp() {
   });
   const [cloudSize, setCloudSize] = useState(DEFAULT_CLOUD);
   const [sizeRatio, setSizeRatio] = useState(DEFAULT_SIZE_RATIO);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [collisionPad, setCollisionPad] = useState(DEFAULT_COLLISION_PAD);
   const [coverFrame, setCoverFrame] = useState(DEFAULT_COVER_FRAME);
   const [centerStrengthBase, setCenterStrengthBase] = useState(
@@ -793,6 +797,16 @@ export function CloudApp() {
                           value={sizeRatio}
                           onChange={setSizeRatio}
                         />
+                        <Knob
+                          label="Zoom"
+                          hint="Scales the whole cloud relative to the canvas. Zoom out for breathing room on large clouds."
+                          display={`${Math.round(zoom * 100)}%`}
+                          min={MIN_ZOOM}
+                          max={MAX_ZOOM}
+                          step={0.05}
+                          value={zoom}
+                          onChange={setZoom}
+                        />
                       </VStack>
                     </Collapsible>
                   ) : null}
@@ -1018,6 +1032,7 @@ export function CloudApp() {
                   items={visible}
                   audioUnlocked={audioUnlocked}
                   sizeRatio={sizeRatio}
+                  zoom={zoom}
                   collisionPad={collisionPad}
                   physics={physics}
                   lockedId={

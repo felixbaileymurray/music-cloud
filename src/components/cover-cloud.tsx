@@ -83,11 +83,13 @@ function radiusFor(
   weight: number,
   minWeight: number,
   maxWeight: number,
-  sizeRatio: number
+  sizeRatio: number,
+  zoom: number
 ) {
   const ratio = Math.max(1, sizeRatio);
-  const minR = MIN_RADIUS;
-  const maxR = MIN_RADIUS * ratio;
+  const scale = Math.max(0.1, zoom);
+  const minR = MIN_RADIUS * scale;
+  const maxR = MIN_RADIUS * ratio * scale;
   if (maxWeight === minWeight) return (minR + maxR) / 2;
   const t =
     (Math.sqrt(weight) - Math.sqrt(minWeight)) /
@@ -161,6 +163,7 @@ export function CoverCloud({
   items,
   audioUnlocked,
   sizeRatio = 4,
+  zoom = 1,
   collisionPad = 10,
   physics = DEFAULT_CLOUD_PHYSICS,
   lockedId = null,
@@ -176,6 +179,8 @@ export function CoverCloud({
   items: CloudHit[];
   audioUnlocked: boolean;
   sizeRatio?: number;
+  /** Scales all covers vs the canvas. 1 = current default. Lower = more breathing room. */
+  zoom?: number;
   collisionPad?: number;
   physics?: CloudPhysics;
   lockedId?: string | null;
@@ -199,7 +204,8 @@ export function CoverCloud({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
 
-  collisionPadRef.current = collisionPad;
+  // Keep pad proportional to cover size so zoom-out doesn't inflate gaps.
+  collisionPadRef.current = collisionPad * Math.max(0.1, zoom);
   hoverReheatRef.current = physics.hoverReheat;
   onPreviewChangeRef.current = onPreviewChange;
 
@@ -217,11 +223,11 @@ export function CoverCloud({
     return items.map((item, index) => ({
       ...item,
       id: cloudNodeId(cloudKind, item),
-      r: radiusFor(weights[index], minWeight, maxWeight, sizeRatio),
+      r: radiusFor(weights[index], minWeight, maxWeight, sizeRatio, zoom),
       x: size.width / 2,
       y: size.height / 2,
     }));
-  }, [cloudKind, items, size.height, size.width, sizeRatio]);
+  }, [cloudKind, items, size.height, size.width, sizeRatio, zoom]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -241,7 +247,7 @@ export function CoverCloud({
   useEffect(() => {
     const cx = size.width / 2;
     const cy = size.height / 2;
-    const pad = collisionPad;
+    const pad = collisionPad * Math.max(0.1, zoom);
     const {
       centerStrengthBase,
       centerStrengthMass,
@@ -312,7 +318,7 @@ export function CoverCloud({
       simulation.stop();
       simRef.current = null;
     };
-  }, [sized, size.height, size.width, collisionPad, physics]);
+  }, [sized, size.height, size.width, collisionPad, zoom, physics]);
 
   useEffect(() => {
     hoverIdRef.current = hoveredId;
