@@ -1,0 +1,23 @@
+/*
+ * Neutral theme sets Figtree on [data-astryx-theme="neutral"] in
+ * @astryxdesign/theme-neutral/theme.css. Re-declare font tokens on that scope
+ * (see Astryx settings-dialog template) so Text, Button, and Heading all
+ * resolve our loaded faces — :root overrides are not enough.
+ */
+@layer astryx-theme {
+  [data-astryx-theme="neutral"] {
+    --font-family-body: var(--font-bricola-body), ui-sans-serif, system-ui,
+      sans-serif;
+    --font-family-code: var(--font-bricola-body), ui-sans-serif, system-ui,
+      sans-serif;
+    --font-family-heading: var(--font-bricola-heading), ui-sans-serif,
+      system-ui, sans-serif;
+
+    --text-heading-1-weight: var(--font-weight-bold);
+    --text-heading-2-weight: var(--font-weight-bold);
+    --text-heading-3-weight: var(--font-weight-bold);
+    --text-heading-4-weight: var(--font-weight-bold);
+    --text-heading-5-weight: var(--font-weight-bold);
+    --text-heading-6-weight: var(--font-weight-bold);
+  }
+}
