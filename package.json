@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 43217",
     "lint": "eslint",
+    "theme:build": "astryx theme build src/theme/bricolaTheme.ts -o src/theme/bricola.css",
+    "theme:check": "astryx theme build src/theme/bricolaTheme.ts -o src/theme/bricola.css --check",
     "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
   },
   "dependencies": {
