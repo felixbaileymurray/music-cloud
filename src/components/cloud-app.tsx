@@ -24,6 +24,7 @@ import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Download, Plus, Share2 } from "lucide-react";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { CloudInfoPanel } from "@/components/cloud-info-panel";
 import { CreateCloudFlow } from "@/components/create-cloud-flow";
 import {
@@ -40,7 +41,6 @@ import {
   sameCloudHit,
   type HoverPreview,
 } from "@/lib/cloud-node";
-import { brand } from "@/lib/brand";
 import { cacheKey } from "@/lib/normalize";
 import { idbGet, idbSet } from "@/lib/idb-cache";
 import {
@@ -687,7 +687,7 @@ export function CloudApp() {
             <VStack gap={4} width="100%" paddingBlock={0} hAlign="center">
               <Card width="100%" padding={4}>
                 <VStack gap={5} width="100%">
-                  <Text type="supporting">{brand.name}</Text>
+                  <BrandWordmark />
 
                   <VStack gap={2} width="100%">
                     {hasCloud ? (
