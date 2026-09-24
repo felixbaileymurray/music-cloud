@@ -1,4 +1,4 @@
-# Music Cloud
+# Bricola
 
 Cover art cloud from Spotify or a listening history export. Hover a cover to hear a 30-second snippet.
 
@@ -28,7 +28,7 @@ Copy `.env.example` to `.env.local` and set:
 
 **Never commit secrets.** For Vercel, set the same variables under Project → Environment Variables. Do not use `NEXT_PUBLIC_` for any of these.
 
-Production redirect URI example: `https://your-domain.com/api/spotify/callback` (also allowlisted in the Spotify app).
+Production redirect URI example: `https://bricola.art/api/spotify/callback` (also allowlisted in the Spotify app).
 
 ## Use
 

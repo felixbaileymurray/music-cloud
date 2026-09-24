@@ -40,6 +40,7 @@ import {
   sameCloudHit,
   type HoverPreview,
 } from "@/lib/cloud-node";
+import { brand } from "@/lib/brand";
 import { cacheKey } from "@/lib/normalize";
 import { idbGet, idbSet } from "@/lib/idb-cache";
 import {
@@ -686,7 +687,7 @@ export function CloudApp() {
             <VStack gap={4} width="100%" paddingBlock={0} hAlign="center">
               <Card width="100%" padding={4}>
                 <VStack gap={5} width="100%">
-                  <Text type="supporting">Music Cloud</Text>
+                  <Text type="supporting">{brand.name}</Text>
 
                   <VStack gap={2} width="100%">
                     {hasCloud ? (

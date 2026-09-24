@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { brand } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Music Cloud",
+  metadataBase: new URL(brand.origin),
+  title: brand.name,
   description:
     "Cover art cloud from a listening history list. Hover plays music snippets.",
 };

@@ -1,6 +1,7 @@
+import { previewCacheDbName } from "@/lib/app-id";
 import type { PreviewMatch } from "@/lib/types";
 
-const DB_NAME = "music-cloud-preview-cache";
+const DB_NAME = previewCacheDbName();
 const STORE = "previews";
 // Bump when preview selection / clip identity changes so stale URLs are dropped.
 const VERSION = 3;

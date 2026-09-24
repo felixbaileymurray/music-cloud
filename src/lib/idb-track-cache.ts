@@ -1,6 +1,7 @@
+import { trackPreviewCacheDbName } from "@/lib/app-id";
 import type { TrackPreviewMatch } from "@/lib/types";
 
-const DB_NAME = "music-cloud-track-preview-cache";
+const DB_NAME = trackPreviewCacheDbName();
 const STORE = "previews";
 const VERSION = 1;
 
