@@ -15,6 +15,7 @@ This is not a library player. Items without a matched, playable preview never en
 | [docs/contributing.md](docs/contributing.md) | Branches, PRs, conventions |
 | [docs/ops.md](docs/ops.md) | Deploy and releases |
 | [docs/roadmap.md](docs/roadmap.md) | Unshipped ideas |
+| [docs/testing.md](docs/testing.md) | E2E layout and how to run tests |
 | [CHANGELOG.md](CHANGELOG.md) | Released changes |
 
 Agent UI rules live in [AGENTS.md](AGENTS.md). Branch and brand policy live under [`.cursor/rules/`](.cursor/rules/).
@@ -41,6 +42,9 @@ Spotify is optional. Without it, use manual upload or **See an example**.
 | `npm run lint` | ESLint |
 | `npm run theme:build` | Build the Bricola Astryx theme CSS |
 | `npm run theme:check` | Fail if theme artifacts are stale |
+| `npm run test:e2e` | Playwright E2E (headless) |
+| `npm run test:e2e:ui` | Playwright UI mode |
+| `npm run test:e2e:install` | Install Chromium for Playwright |
 
 ## Use
 
@@ -50,6 +54,12 @@ Spotify is optional. Without it, use manual upload or **See an example**.
 4. Click once to unlock audio, then hover.
 
 Album clouds can rotate up to three snippets per cover. Track clouds play one snippet per cover.
+
+Snippets fade in and out. Deezer clips re-resolve on play so short-lived CDN tokens do not leave silent covers.
+
+## Tests
+
+Playwright E2E regression: `npm run test:e2e` (see [docs/testing.md](docs/testing.md) for layout, coverage, and planned unit tests).
 
 ## Repository
 

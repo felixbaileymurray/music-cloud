@@ -10,6 +10,7 @@ Short project context for humans and agents. Prefer these pages over guessing fr
 | [contributing.md](contributing.md) | Both | Branches, PRs, UI and brand pointers |
 | [ops.md](ops.md) | Human | Deploy, env in production, releases |
 | [roadmap.md](roadmap.md) | Both | Unshipped ideas only |
+| [testing.md](testing.md) | Both | E2E layout, how to run tests, planned unit tests |
 
 Also see:
 
@@ -28,3 +29,4 @@ Also see:
 | Open a PR | [contributing.md](contributing.md) |
 | Cut a release or check deploy | [ops.md](ops.md) |
 | See what is not built yet | [roadmap.md](roadmap.md) |
+| Run or extend automated tests | [testing.md](testing.md) |
