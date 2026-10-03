@@ -10,10 +10,9 @@
     "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:install": "playwright install chromium"
+    "test:e2e:install": "playwright install chromium",
     "theme:build": "astryx theme build src/theme/bricolaTheme.ts -o src/theme/bricola.css",
-    "theme:check": "astryx theme build src/theme/bricolaTheme.ts -o src/theme/bricola.css --check",
-    "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
+    "theme:check": "astryx theme build src/theme/bricolaTheme.ts -o src/theme/bricola.css --check"
   },
   "dependencies": {
     "@astryxdesign/core": "^0.6.2",
