@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "src/theme/bricola.js",
+    "src/theme/bricola.d.ts",
+    "src/theme/bricola.variants.d.ts",
   ]),
 ]);
 

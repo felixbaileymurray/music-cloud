@@ -1,5 +1,5 @@
 ---
-description: Semantic versioning and how to cut GitHub Releases for Music Cloud
+description: Semantic versioning and how to cut GitHub Releases for Bricola
 alwaysApply: true
 ---
 
@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Versioning
 
-Music Cloud uses [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). The app is private (not an npm package); versions are for tags, GitHub Releases, and `package.json`.
+Bricola uses [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). The app is private (not an npm package); versions are for tags, GitHub Releases, and `package.json`.
 
 | Bump | When |
 |------|------|

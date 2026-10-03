@@ -1,3 +1,4 @@
+import { brand } from "@/lib/brand";
 import { namesMatch } from "@/lib/normalize";
 import { previewUrlPlayable } from "@/lib/preview-probe";
 import type {
@@ -45,7 +46,7 @@ type ItunesLookupResponse = {
   results?: Array<ItunesAlbum | ItunesTrack>;
 };
 
-const UA = "MusicCloud/0.1 (album cover cloud preview lookup)";
+const UA = `${brand.nameSentence}/0.2 (album cover cloud preview lookup)`;
 
 export function itunesArtwork(url: string | undefined) {
   if (!url) return null;
