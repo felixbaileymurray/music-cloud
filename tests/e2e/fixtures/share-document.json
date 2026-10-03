@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "kind": "album",
+  "sourceLabel": "e2e fixture",
+  "listens": [
+    {
+      "album": "Abbey Road",
+      "artist": "The Beatles",
+      "listenCount": 42
+    }
+  ]
+}
