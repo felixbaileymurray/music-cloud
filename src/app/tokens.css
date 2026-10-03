@@ -1,7 +1,7 @@
 /*
  * App-local layout tokens only.
- * Colors, typography, spacing, radius, shadows, and focus come from Astryx
- * (@astryxdesign/theme-neutral). Do not redefine --color-* here.
+ * Colors, typography scale, spacing, radius, shadows, and focus come from
+ * Neutral via the bricola child theme. Do not redefine --color-* here.
  */
 
 :root {

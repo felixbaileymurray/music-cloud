@@ -1,4 +1,5 @@
 import { toBlob, toJpeg, toPng } from "html-to-image";
+import { brand } from "@/lib/brand";
 import type { CloudKind } from "@/lib/types";
 
 export type SaveImageFormat = "png" | "jpeg" | "webp";
@@ -28,14 +29,14 @@ export function saveImageFileName(
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
-  return `music-cloud-${kind}-${yyyy}-${mm}-${dd}.${FORMAT_EXT[format]}`;
+  return `${brand.slug}-${kind}-${yyyy}-${mm}-${dd}.${FORMAT_EXT[format]}`;
 }
 
 export function saveJsonFileName(kind: CloudKind, date = new Date()) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
-  return `music-cloud-${kind}-${yyyy}-${mm}-${dd}.json`;
+  return `${brand.slug}-${kind}-${yyyy}-${mm}-${dd}.json`;
 }
 
 function canvasBackgroundColor(node: HTMLElement): string {

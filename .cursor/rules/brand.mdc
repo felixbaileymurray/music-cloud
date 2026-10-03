@@ -1,0 +1,22 @@
+---
+description: Product brand vs stable app id (bricola vs collage)
+alwaysApply: true
+---
+
+# Brand and app id
+
+Two layers — do not conflate them.
+
+| Layer | Module | When it changes |
+|-------|--------|-----------------|
+| **Product brand** | [`src/lib/brand.ts`](src/lib/brand.ts) | User-visible rename (name, slug, domain) |
+| **App id** | [`src/lib/app-id.ts`](src/lib/app-id.ts) | Almost never — storage and share protocol |
+
+## Rules
+
+- **User-facing** name, slug, domain, download stems, User-Agent → import `brand` from `@/lib/brand`. Do not hardcode `bricola`, `Bricola`, or `bricola.art` in components or runtime copy.
+- **Storage and protocol** (IndexedDB names, share hash prefix) → import `APP_ID`, `SHARE_HASH_PREFIX`, and helpers from `@/lib/app-id`. Do not hardcode `collage` or `cl1=`.
+- `APP_ID` is generic on purpose (`collage` will appear in UI copy later). **Never sprinkle the string.** Derive DB names via `previewCacheDbName()` / `trackPreviewCacheDbName()` or `` `${APP_ID}-…` ``. To find technical uses, search for the symbol `APP_ID`, not the word collage.
+- Do **not** change `app-id.ts` when the product is renamed. A rename is `brand.ts` plus user-facing prose (README, changelog intro, examples in this rule).
+- Repo folder and `package.json` `"name": "music-cloud"` are the git remote, not the product. Do not “fix” them during a rebrand.
+- Metaphor copy (“music cloud”, “cover art cloud”) is not the product name.
