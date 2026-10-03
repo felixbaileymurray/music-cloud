@@ -40,3 +40,7 @@ Production redirect URI example: `https://bricola.art/api/spotify/callback` (als
 **Album clouds** (manual): up to three rotating snippets per album. **Track clouds** (Spotify or manual): one snippet per track.
 
 Snippets fade in and out. Deezer clips re-resolve on play so short-lived CDN tokens do not leave silent covers.
+
+## Tests
+
+Playwright E2E regression: `npm run test:e2e` (see [docs/testing.md](docs/testing.md) for layout, coverage, and planned unit tests).
