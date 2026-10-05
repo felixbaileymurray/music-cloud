@@ -10,14 +10,14 @@ const systemSans =
 /**
  * Neutral, with Bricola type only.
  * Families resolve through next/font variables on <html> (see src/lib/fonts.ts).
- * Scale matches Neutral so heading.weight is applied without changing sizes.
+ * Slightly larger base than Neutral, with a wider step so headings pull away from body.
  */
 export const bricolaTheme = defineTheme({
   name: "bricola",
   extends: neutralTheme,
   icons: neutralIconRegistry,
   typography: {
-    scale: { base: 14, ratio: 1.2 },
+    scale: { base: 15, ratio: 1.25 },
     body: {
       family: "var(--font-bricola-body)",
       fallbacks: systemSans,

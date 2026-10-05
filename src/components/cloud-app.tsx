@@ -967,7 +967,7 @@ export function CloudApp() {
               <div className="spa-empty">
                 <EmptyState
                   title="Cover art collage"
-                  description="Create a collage of track or album art from Spotify or a manual list. Hover over a cover to play a short snippet of audio."
+                  description="Create a collage of track or album art from Spotify or a manual list. Hover over a cover to play a short snippet of audio. Click to lock an item and the details will stay visible."
                   headingLevel={1}
                   actions={
                     !uploadOpen ? (

@@ -1,7 +1,6 @@
 "use client";
 
 import { AspectRatio } from "@astryxdesign/core/AspectRatio";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
@@ -81,12 +80,9 @@ export function TrackInfoCard({
       ) : null}
 
       {!isLoading && !error && !details ? (
-        <EmptyState
-          title="No track in focus"
-          description="Hover over cover art to hear audio snippets and see details. Click to lock a track and the details will stay visible."
-          headingLevel={3}
-          isCompact
-        />
+        <Text type="body" color="secondary" display="block" justify="center">
+          Hover to browse, click to lock.
+        </Text>
       ) : null}
 
       {!isLoading && details ? (
