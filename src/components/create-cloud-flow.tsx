@@ -135,8 +135,8 @@ export function CreateCloudFlow({
 
   useEffect(() => {
     const titles: Record<Step, string> = {
-      chooser: "Create Cloud",
-      kind: "What to cloud?",
+      chooser: "Create a collage",
+      kind: "Choose a source",
       "spotify-source": "Choose tracks",
       manual: parseKind === "track" ? "Upload tracks" : "Upload albums",
     };
@@ -161,7 +161,7 @@ export function CreateCloudFlow({
 
   function startSpotify() {
     if (!status?.configured) {
-      setError("Spotify is not configured on this server.");
+      setError("The Spotify connection is not configured correctly. Report a bug: feedback@bricola.art");
       return;
     }
     if (!status.connected) {
@@ -258,7 +258,7 @@ export function CreateCloudFlow({
           <OptionCard
             label="Create Manually"
             title="Create Manually"
-            description="Upload a listening history export, or input your own list."
+            description="Upload a listening history export, or input a list manually."
             icon={PenLine}
             onClick={startManual}
           />
@@ -281,7 +281,7 @@ export function CreateCloudFlow({
         {status?.configured === false ? (
           <Banner
             status="warning"
-            title="Spotify login is not configured on this server."
+            title="The Spotify connection is not configured correctly. Report a bug: feedback@bricola.art"
             collapsible={false}
           />
         ) : null}
@@ -299,13 +299,13 @@ export function CreateCloudFlow({
     return (
       <VStack gap={5} width="100%">
         <Text type="body" color="secondary">
-          Pick what each cover in the cloud represents.
+          What do you want to use to create your collage?
         </Text>
         <Grid columns={3} gap={3} width="100%" align="stretch">
           <OptionCard
             label="Tracks"
             title="Tracks"
-            description="Each cover is a track, sized by how much you listen."
+            description="Each cover is a track."
             icon={Music2}
             onClick={() => pickKind("track")}
           />
@@ -315,7 +315,7 @@ export function CreateCloudFlow({
             description={
               albumsDisabled
                 ? "Coming soon"
-                : "Each cover is an album, sized by how much you listen."
+                : "Each cover is an album."
             }
             icon={Disc3}
             isDisabled={albumsDisabled}
@@ -371,7 +371,7 @@ export function CreateCloudFlow({
           ) : null}
         </VStack>
         <Button
-          label="Build cloud"
+          label="Build collage"
           variant="primary"
           width="100%"
           isDisabled={busy}
