@@ -96,7 +96,7 @@ export function HistoryIntake({
           if (list.length) await readFiles(list);
         }}
         isLoading={busy}
-        description="Spotify export files will work straight away. If you're uploading a CSV, make sure it's formatted correctly for the collage you want to create."
+        description="Spotify export files will work straight away — download your listening history from your Spotify account. If you're uploading a CSV, make sure it's formatted correctly for the collage you want to create."
         placeholder="Drop Spotify JSON, CSV, or text"
         width="100%"
       />

@@ -136,7 +136,7 @@ export function CreateCloudFlow({
   useEffect(() => {
     const titles: Record<Step, string> = {
       chooser: "Create a collage",
-      kind: "What do you want use?",
+      kind: "Choose a source",
       "spotify-source": "Choose tracks",
       manual: parseKind === "track" ? "Upload tracks" : "Upload albums",
     };
@@ -258,7 +258,7 @@ export function CreateCloudFlow({
           <OptionCard
             label="Create Manually"
             title="Create Manually"
-            description="Upload a listening history export, or input a list manually. You can export and download your listening history via your Spotify account."
+            description="Upload a listening history export, or input a list manually."
             icon={PenLine}
             onClick={startManual}
           />
