@@ -3,7 +3,6 @@ import { clickSeeAnExample, installPreviewMocks } from "../helpers/mock-apis";
 import {
   cloudCovers,
   dismissAudioUnlock,
-  sidebar,
 } from "../helpers/cloud";
 
 test.describe("create via example", () => {
@@ -11,7 +10,10 @@ test.describe("create via example", () => {
     await installPreviewMocks(page);
     await page.goto("/");
 
-    await sidebar(page).getByRole("button", { name: "Create" }).click();
+    await page
+      .getByLabel("Cloud canvas")
+      .getByRole("button", { name: "Create" })
+      .click();
     await clickSeeAnExample(page);
 
     await expect(page.getByText("Fetching covers and snippets")).toBeVisible();

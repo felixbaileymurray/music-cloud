@@ -5,4 +5,6 @@ export const author = {
   githubUrl: "https://github.com/felixbaileymurray",
   linkedinUrl: "https://www.linkedin.com/in/felixbaileymurray",
   buyMeACoffeeUrl: "https://buymeacoffee.com/felixbaileymurray",
+  /** Product repo releases (music-cloud remote; product name is Bricola). */
+  releasesUrl: "https://github.com/felixbaileymurray/music-cloud/releases",
 } as const;

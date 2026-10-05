@@ -12,7 +12,6 @@ import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
-import { Divider } from "@astryxdesign/core/Divider";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Grid } from "@astryxdesign/core/Grid";
 import { Heading } from "@astryxdesign/core/Heading";
@@ -27,9 +26,9 @@ import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import {
-  ChevronRight,
   Download,
   ListMusic,
+  PanelRightClose,
   Plus,
   Share2,
 } from "lucide-react";
@@ -701,43 +700,33 @@ export function CloudApp() {
               <VStack gap={5} width="100%" height="100%">
                   <BrandWordmark />
 
-                  <VStack gap={2} width="100%">
-                    {hasCloud ? (
-                      <>
-                        <Button
-                          label="Share"
-                          variant="primary"
-                          icon={<Icon icon={Share2} size="sm" />}
-                          width="100%"
-                          onClick={openShare}
-                        />
-                        <Grid columns={2} gap={2} width="100%">
-                          <Button
-                            label="Create"
-                            variant="secondary"
-                            icon={<Icon icon={Plus} size="sm" />}
-                            onClick={openCreate}
-                            width="100%"
-                          />
-                          <Button
-                            label="Save"
-                            variant="secondary"
-                            icon={<Icon icon={Download} size="sm" />}
-                            width="100%"
-                            onClick={openSave}
-                          />
-                        </Grid>
-                      </>
-                    ) : (
+                  {hasCloud ? (
+                    <VStack gap={2} width="100%">
                       <Button
-                        label="Create"
+                        label="Share"
                         variant="primary"
-                        icon={<Icon icon={Plus} size="sm" />}
-                        onClick={openCreate}
+                        icon={<Icon icon={Share2} size="sm" />}
                         width="100%"
+                        onClick={openShare}
                       />
-                    )}
-                  </VStack>
+                      <Grid columns={2} gap={2} width="100%">
+                        <Button
+                          label="Create"
+                          variant="secondary"
+                          icon={<Icon icon={Plus} size="sm" />}
+                          onClick={openCreate}
+                          width="100%"
+                        />
+                        <Button
+                          label="Save"
+                          variant="secondary"
+                          icon={<Icon icon={Download} size="sm" />}
+                          width="100%"
+                          onClick={openSave}
+                        />
+                      </Grid>
+                    </VStack>
+                  ) : null}
 
                   {phase === "cloud" ? (
                     <Collapsible trigger="Customise" defaultIsOpen={false}>
@@ -932,7 +921,6 @@ export function CloudApp() {
                       </VStack>
                     ) : null}
 
-                    <Divider />
                     <AboutSection />
                   </VStack>
               </VStack>
@@ -956,7 +944,7 @@ export function CloudApp() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setRightPanelOpen(false)}
-                      icon={<Icon icon={ChevronRight} size="sm" />}
+                      icon={<Icon icon={PanelRightClose} size="sm" />}
                     />
                   </HStack>
                   <CloudInfoPanel
@@ -968,7 +956,6 @@ export function CloudApp() {
                     albumError={albumError}
                     trackError={trackError}
                     activeClip={focusedClip}
-                    isLocked={locked != null}
                   />
                 </VStack>
               </Card>
@@ -1018,6 +1005,7 @@ export function CloudApp() {
                       <Button
                         label="Create"
                         variant="primary"
+                        icon={<Icon icon={Plus} size="sm" />}
                         onClick={openCreate}
                       />
                     ) : undefined

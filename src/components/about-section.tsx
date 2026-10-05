@@ -1,47 +1,26 @@
+"use client";
+
+import { useState } from "react";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
 import { IconButton } from "@astryxdesign/core/IconButton";
-import { Text } from "@astryxdesign/core/Text";
-import { VStack } from "@astryxdesign/core/VStack";
-import { Globe, Heart } from "lucide-react";
-import { GithubIcon } from "@/components/github-icon";
-import { LinkedinIcon } from "@/components/linkedin-icon";
+import { Heart, Info } from "lucide-react";
+import { AboutModal } from "@/components/about-modal";
 import { author } from "@/lib/author";
 
 export function AboutSection() {
+  const [aboutOpen, setAboutOpen] = useState(false);
+
   return (
-    <VStack gap={2} width="100%" hAlign="start">
-      <Text type="body">Created by {author.name}</Text>
-      <HStack gap={1} vAlign="center">
+    <>
+      <HStack gap={1} vAlign="center" width="100%">
         <IconButton
-          label="Website"
-          tooltip="Website"
+          label="About"
+          tooltip="About"
           variant="ghost"
           size="sm"
-          href={author.websiteUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          icon={<Icon icon={Globe} size="sm" />}
-        />
-        <IconButton
-          label="GitHub"
-          tooltip="GitHub"
-          variant="ghost"
-          size="sm"
-          href={author.githubUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          icon={<Icon icon={GithubIcon} size="sm" />}
-        />
-        <IconButton
-          label="LinkedIn"
-          tooltip="LinkedIn"
-          variant="ghost"
-          size="sm"
-          href={author.linkedinUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          icon={<Icon icon={LinkedinIcon} size="sm" />}
+          onClick={() => setAboutOpen(true)}
+          icon={<Icon icon={Info} size="sm" />}
         />
         <IconButton
           label="Support"
@@ -54,6 +33,7 @@ export function AboutSection() {
           icon={<Icon icon={Heart} size="sm" />}
         />
       </HStack>
-    </VStack>
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
+    </>
   );
 }

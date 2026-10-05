@@ -9,7 +9,6 @@ import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList"
 import { Spinner } from "@astryxdesign/core/Spinner";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { Lock } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import {
   AppleMusicIcon,
@@ -51,22 +50,13 @@ export function TrackInfoCard({
   details,
   isLoading,
   error,
-  isLocked = false,
 }: {
   details: TrackDetails | null;
   isLoading: boolean;
   error: string | null;
-  isLocked?: boolean;
 }) {
   return (
     <VStack gap={4} width="100%" align="stretch">
-      <HStack gap={2} width="100%" justify="between" align="center">
-        <Text type="supporting">Track</Text>
-        {isLocked ? (
-          <Icon icon={Lock} size="xsm" color="secondary" label="Track locked" />
-        ) : null}
-      </HStack>
-
       {isLoading ? (
         <VStack gap={3} width="100%" align="center" paddingBlock={4}>
           <Spinner label="Loading track" size="md" />
