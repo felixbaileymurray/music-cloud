@@ -27,9 +27,9 @@ import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import {
+  ChevronRight,
   Download,
-  PanelRightClose,
-  PanelRightOpen,
+  ListMusic,
   Plus,
   Share2,
 } from "lucide-react";
@@ -676,8 +676,6 @@ export function CloudApp() {
   const isResolving = phase === "resolve";
   const cloudSizeMax = Math.max(1, resolved.length);
 
-  const idleStatusCopy =
-    "Create a collage of track or album covers from Spotify or a manual list";
   const emptyStatusCopy = "No snippets matched";
 
   return (
@@ -932,11 +930,7 @@ export function CloudApp() {
                           </Text>
                         ) : null}
                       </VStack>
-                    ) : (
-                      <Text type="body" color="secondary">
-                        {idleStatusCopy}
-                      </Text>
-                    )}
+                    ) : null}
 
                     <Divider />
                     <AboutSection />
@@ -962,7 +956,7 @@ export function CloudApp() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setRightPanelOpen(false)}
-                      icon={<Icon icon={PanelRightClose} size="sm" />}
+                      icon={<Icon icon={ChevronRight} size="sm" />}
                     />
                   </HStack>
                   <CloudInfoPanel
@@ -988,11 +982,11 @@ export function CloudApp() {
               <div className="spa-panel-toggle spa-panel-toggle--end">
                 <IconButton
                   label="Expand details sidebar"
-                  tooltip="Expand sidebar"
+                  tooltip="Show details"
                   variant="secondary"
                   size="sm"
                   onClick={() => setRightPanelOpen(true)}
-                  icon={<Icon icon={PanelRightOpen} size="sm" />}
+                  icon={<Icon icon={ListMusic} size="sm" />}
                 />
               </div>
             ) : null}
