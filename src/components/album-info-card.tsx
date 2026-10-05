@@ -104,7 +104,7 @@ export function AlbumInfoCard({
       {!isLoading && !error && !details ? (
         <EmptyState
           title="No album in focus"
-          description="Hover covers to hear snippets and see details. Click to lock an album so you can keep reading while you explore."
+          description="Hover over cover art to hear audio snippets and see details. Click to lock an album and the details will stay visible."
           headingLevel={3}
           isCompact
         />

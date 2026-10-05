@@ -83,7 +83,7 @@ export function TrackInfoCard({
       {!isLoading && !error && !details ? (
         <EmptyState
           title="No track in focus"
-          description="Hover covers to hear the track snippet and see details. Click to lock a track while you explore."
+          description="Hover over cover art to hear audio snippets and see details. Click to lock a track and the details will stay visible."
           headingLevel={3}
           isCompact
         />

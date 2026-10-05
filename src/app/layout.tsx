@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(brand.origin),
   title: brand.name,
   description:
-    "Cover art cloud from a listening history list. Hover plays music snippets.",
+    "Create a visual collage of your listening history. Hover over a cover to play a short snippet of audio.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

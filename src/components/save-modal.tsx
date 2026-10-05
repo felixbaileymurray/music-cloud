@@ -58,7 +58,7 @@ export function SaveModal({
       restore = await prepareNeutralCapture();
       const frame = getCloudFrame();
       if (!frame) {
-        throw new Error("Cloud canvas is not ready to export.");
+        throw new Error("The collage canvas is not ready to export.");
       }
       const blob = await captureCloudImage(frame, {
         format,
@@ -69,7 +69,7 @@ export function SaveModal({
       setError(
         err instanceof Error
           ? err.message
-          : "Could not save an image of the cloud."
+          : "Could not save an image of the collage."
       );
     } finally {
       restore?.();
@@ -92,15 +92,14 @@ export function SaveModal({
     <UploadModal open={open} title="Save cloud" onClose={onClose}>
       <VStack gap={5} width="100%">
         <Text type="body" color="secondary">
-          Save a still image of the cloud, or a JSON snapshot of the visible
-          items so you can rebuild this moment later.
+          Save a still image of the collage as you see it. Or download a file backup of the visible
+          items so you can rebuild the collage at another time.
         </Text>
 
         <VStack gap={4} width="100%">
           <Text type="supporting">Image</Text>
           <Text type="body" color="secondary">
-            Arrange the layout in the window before saving — the export matches
-            the current canvas size and aspect ratio.
+            The exported image will contain everything you can see on the canvas, and the size and aspect ratio will stay the same.
           </Text>
 
           <VStack gap={2} width="100%">
@@ -120,7 +119,7 @@ export function SaveModal({
 
           <RadioList
             label="Resolution"
-            description="How many pixels relative to the on-screen canvas."
+            description="How many pixels relative to the on-screen canvas. Higher resolution means a bigger file."
             value={resolution}
             onChange={(value) => setResolution(value as SaveResolutionPreset)}
             width="100%"
@@ -128,7 +127,7 @@ export function SaveModal({
             <RadioListItem
               value="low"
               label="Low"
-              description="1× — smaller file, matches screen pixels"
+              description="1× — lower quality, smaller file"
             />
             <RadioListItem
               value="medium"
@@ -158,7 +157,7 @@ export function SaveModal({
           <Text type="body" color="secondary">
             {shareDoc
               ? `Flat list of the ${shareItemTypeLabel(cloudKind, listenCount)} currently in the cloud. Re-upload it in Create later — same format as Share.`
-              : "Create a cloud first to save a JSON snapshot."}
+              : "Create a cloud first to save a JSON backup."}
           </Text>
           <Button
             label="Download JSON"

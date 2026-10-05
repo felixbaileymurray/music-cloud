@@ -230,12 +230,16 @@ export function CloudApp() {
       const reason = params.get("reason");
       const message =
         spotify === "denied"
-          ? "Spotify authorization was cancelled."
+          ? "You left Spotify without connecting. Choose Connect Spotify again when you're ready, or create a cloud another way."
           : reason === "cookies"
-            ? "Spotify login lost its session cookie. Open the app at http://127.0.0.1:43217 (not localhost) and try again."
-            : reason === "token"
-              ? "Spotify accepted login but token exchange failed. Check client ID/secret and redirect URI."
-              : "Spotify connection failed. Try again from http://127.0.0.1:43217.";
+            ? "Your Spotify login expired before we could finish (this usually happens if the Spotify page was left open too long). Choose Connect Spotify again."
+            : reason === "state"
+              ? "That Spotify login didn't match this browser session (often from connecting in more than one tab). Choose Connect Spotify again."
+              : reason === "token"
+                ? "Spotify signed you in, but we couldn't finish the connection on our side. Create a cloud manually or try an example instead."
+                : reason === "config"
+                  ? "Spotify login isn't set up on this server. Create a cloud manually or try an example instead."
+                  : "We couldn't connect to Spotify. Create a cloud manually or try an example instead.";
       setOauthError(message);
       setUploadOpen(true);
       window.history.replaceState({}, "", window.location.pathname);
@@ -563,7 +567,7 @@ export function CloudApp() {
       setPendingShare(doc);
       setReplaceWarningReason("share");
       setCreateGate("warning");
-      setCreateModalTitle("Replace current cloud?");
+      setCreateModalTitle("Do you want to replace your current collage?");
       setUploadOpen(true);
       return;
     }
@@ -596,13 +600,13 @@ export function CloudApp() {
   function beginCreateFlow() {
     setCreateFlowKey((key) => key + 1);
     setCreateGate("flow");
-    setCreateModalTitle("Create Cloud");
+    setCreateModalTitle("Create collage");
   }
 
   function openCreate() {
     setResolveError(null);
     setOauthError(null);
-    setCreateModalTitle("Create Cloud");
+    setCreateModalTitle("Create collage");
     setReplaceWarningReason("create");
     setPendingShare(null);
     if (hasCloud) {
@@ -662,7 +666,7 @@ export function CloudApp() {
   const cloudSizeMax = Math.max(1, resolved.length);
 
   const idleStatusCopy =
-    "Create a cloud from Spotify or a listening history export";
+    "Create a collage of track or album covers from Spotify or a manual list";
   const emptyStatusCopy = "No snippets matched";
 
   return (
@@ -962,8 +966,8 @@ export function CloudApp() {
             {phase === "idle" && !resolveError ? (
               <div className="spa-empty">
                 <EmptyState
-                  title="Cover art cloud"
-                  description="Create a cloud from a Spotify export, CSV, or pasted album list. Matched albums appear here with hover snippets."
+                  title="Cover art collage"
+                  description="Create a collage of track or album art from Spotify or a manual list. Hover over a cover to play a short snippet of audio."
                   headingLevel={1}
                   actions={
                     !uploadOpen ? (
@@ -981,11 +985,9 @@ export function CloudApp() {
             {phase === "resolve" && parsed ? (
               <div className="spa-status">
                 <VStack gap={4} width="100%">
-                  <Heading level={1}>Fetching covers and snippets</Heading>
+                  <Heading level={1}>Fetching covers and audio snippets</Heading>
                   <Text type="body" color="secondary">
-                    Deezer first (top tracks by popularity), iTunes if there is no
-                    match. Each preview is probed; albums without playable audio are
-                    counted as not found before the cloud renders.
+                    If we can't find a cover or audio snippet, it won't be shown in the collage.
                   </Text>
                   <ProgressBar
                     label="Lookup progress"
