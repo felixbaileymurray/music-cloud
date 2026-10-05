@@ -9,6 +9,8 @@ import {
   forceY,
   type Simulation,
 } from "d3-force";
+import { Icon } from "@astryxdesign/core/Icon";
+import { Lock } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -503,6 +505,11 @@ export function CoverCloud({
               draggable={false}
               className="cover-cloud__img"
             />
+            {isLocked ? (
+              <span className="cover-cloud__lock-badge" aria-hidden="true">
+                <Icon icon={Lock} size="xsm" color="secondary" />
+              </span>
+            ) : null}
           </button>
         );
       })}

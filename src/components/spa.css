@@ -138,3 +138,24 @@
   object-fit: cover;
   border-radius: var(--radius-none);
 }
+
+/* Soft pin mark — only while locked; decorative (aria-pressed on the node). */
+.cover-cloud__lock-badge {
+  position: absolute;
+  top: var(--spacing-1-5);
+  inset-inline-end: var(--spacing-1-5);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+  border-radius: var(--radius-full);
+  background: color-mix(
+    in srgb,
+    var(--color-background-surface) 88%,
+    transparent
+  );
+  box-shadow: var(--shadow-low);
+  pointer-events: none;
+}
