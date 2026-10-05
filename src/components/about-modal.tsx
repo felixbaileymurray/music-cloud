@@ -1,5 +1,6 @@
 "use client";
 
+import { Card } from "@astryxdesign/core/Card";
 import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
@@ -59,46 +60,48 @@ export function AboutModal({
                 </Text>
               </VStack>
 
-              <HStack
-                gap={2}
-                width="100%"
-                justify="between"
-                vAlign="center"
-              >
-                <Text type="body">Created by {author.name}</Text>
-                <HStack gap={1} vAlign="center">
-                  <IconButton
-                    label="Website"
-                    tooltip="Website"
-                    variant="ghost"
-                    size="sm"
-                    href={author.websiteUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    icon={<Icon icon={Globe} size="sm" />}
-                  />
-                  <IconButton
-                    label="GitHub"
-                    tooltip="GitHub"
-                    variant="ghost"
-                    size="sm"
-                    href={author.githubUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    icon={<Icon icon={GithubIcon} size="sm" />}
-                  />
-                  <IconButton
-                    label="LinkedIn"
-                    tooltip="LinkedIn"
-                    variant="ghost"
-                    size="sm"
-                    href={author.linkedinUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    icon={<Icon icon={LinkedinIcon} size="sm" />}
-                  />
+              <Card width="100%" variant="muted" padding={3}>
+                <HStack
+                  gap={2}
+                  width="100%"
+                  justify="between"
+                  vAlign="center"
+                >
+                  <Text type="body">Created by {author.name}</Text>
+                  <HStack gap={1} vAlign="center">
+                    <IconButton
+                      label="Website"
+                      tooltip="Website"
+                      variant="ghost"
+                      size="sm"
+                      href={author.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      icon={<Icon icon={Globe} size="sm" />}
+                    />
+                    <IconButton
+                      label="GitHub"
+                      tooltip="GitHub"
+                      variant="ghost"
+                      size="sm"
+                      href={author.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      icon={<Icon icon={GithubIcon} size="sm" />}
+                    />
+                    <IconButton
+                      label="LinkedIn"
+                      tooltip="LinkedIn"
+                      variant="ghost"
+                      size="sm"
+                      href={author.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      icon={<Icon icon={LinkedinIcon} size="sm" />}
+                    />
+                  </HStack>
                 </HStack>
-              </HStack>
+              </Card>
 
               <HStack
                 gap={2}
