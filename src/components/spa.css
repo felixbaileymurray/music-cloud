@@ -16,10 +16,14 @@
 }
 
 /*
- * Layout's middle row (content + end panel) does not inherit gap from the
+ * Layout's middle row (panels + content) does not inherit gap from the
  * outer layout node. Keep the same inset between canvas and sidebar cards.
  */
-.spa-shell .astryx-layout-panel {
+.spa-shell .astryx-layout-panel[aria-label="Cloud sidebar"] {
+  margin-inline-end: var(--inset-page);
+}
+
+.spa-shell .astryx-layout-panel[aria-label="Details sidebar"] {
   margin-inline-start: var(--inset-page);
 }
 
@@ -32,6 +36,16 @@
   border-radius: var(--radius-container);
   background: var(--color-background-body);
   color: var(--color-text-primary);
+}
+
+.spa-panel-toggle {
+  position: absolute;
+  top: var(--spacing-3);
+  z-index: var(--z-sticky);
+}
+
+.spa-panel-toggle--end {
+  inset-inline-end: var(--spacing-3);
 }
 
 .spa-cloud-stage {

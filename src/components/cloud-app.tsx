@@ -12,18 +12,28 @@ import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
 import { Card } from "@astryxdesign/core/Card";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
+import { Divider } from "@astryxdesign/core/Divider";
 import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Grid } from "@astryxdesign/core/Grid";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
+import { IconButton } from "@astryxdesign/core/IconButton";
 import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
+import { StackItem } from "@astryxdesign/core/Stack";
 import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { Download, Plus, Share2 } from "lucide-react";
+import {
+  Download,
+  PanelRightClose,
+  PanelRightOpen,
+  Plus,
+  Share2,
+} from "lucide-react";
+import { AboutSection } from "@/components/about-section";
 import { BrandWordmark } from "@/components/brand-wordmark";
 import { CloudInfoPanel } from "@/components/cloud-info-panel";
 import { CreateCloudFlow } from "@/components/create-cloud-flow";
@@ -85,6 +95,7 @@ const DEFAULT_COVER_FRAME = 5;
 
 export function CloudApp() {
   const [phase, setPhase] = useState<Phase>("idle");
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [exportNeutral, setExportNeutral] = useState(false);
@@ -681,16 +692,15 @@ export function CloudApp() {
       <Layout
         height="fill"
         padding={0}
-        end={
+        start={
           <LayoutPanel
             width="var(--panel-width)"
             padding={0}
             isScrollable
             label="Cloud sidebar"
           >
-            <VStack gap={4} width="100%" paddingBlock={0} hAlign="center">
-              <Card width="100%" padding={4}>
-                <VStack gap={5} width="100%">
+            <Card width="100%" height="100%" padding={4}>
+              <VStack gap={5} width="100%" height="100%">
                   <BrandWordmark />
 
                   <VStack gap={2} width="100%">
@@ -730,53 +740,6 @@ export function CloudApp() {
                       />
                     )}
                   </VStack>
-
-                  {showResolveStatus ? (
-                    <VStack gap={2} width="100%">
-                      {phase === "empty-match" ? (
-                        <Text type="body" color="secondary">
-                          {emptyStatusCopy}
-                        </Text>
-                      ) : null}
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot
-                          variant="accent"
-                          label="Processed"
-                          isPulsing={isResolving}
-                        />
-                        <Text type="body" color="secondary">
-                          {progress.done}/{progress.total} processed
-                        </Text>
-                      </HStack>
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot variant="success" label="Found" />
-                        <Text type="body" color="secondary">
-                          {progress.found} found
-                        </Text>
-                      </HStack>
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot variant="error" label="Not found" />
-                        <Text type="body" color="secondary">
-                          {progress.dropped} not found
-                        </Text>
-                      </HStack>
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot variant="neutral" label="Showing" />
-                        <Text type="body" color="secondary">
-                          {visible.length} showing
-                        </Text>
-                      </HStack>
-                      {skippedLabel ? (
-                        <Text type="supporting" color="secondary">
-                          {skippedLabel}
-                        </Text>
-                      ) : null}
-                    </VStack>
-                  ) : (
-                    <Text type="body" color="secondary">
-                      {idleStatusCopy}
-                    </Text>
-                  )}
 
                   {phase === "cloud" ? (
                     <Collapsible trigger="Customise" defaultIsOpen={false}>
@@ -924,28 +887,115 @@ export function CloudApp() {
                       </VStack>
                     </Collapsible>
                   ) : null}
+
+                  <StackItem size="fill" />
+
+                  <VStack gap={4} width="100%">
+                    {showResolveStatus ? (
+                      <VStack gap={2} width="100%">
+                        {phase === "empty-match" ? (
+                          <Text type="body" color="secondary">
+                            {emptyStatusCopy}
+                          </Text>
+                        ) : null}
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot
+                            variant="accent"
+                            label="Processed"
+                            isPulsing={isResolving}
+                          />
+                          <Text type="body" color="secondary">
+                            {progress.done}/{progress.total} processed
+                          </Text>
+                        </HStack>
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot variant="success" label="Found" />
+                          <Text type="body" color="secondary">
+                            {progress.found} found
+                          </Text>
+                        </HStack>
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot variant="error" label="Not found" />
+                          <Text type="body" color="secondary">
+                            {progress.dropped} not found
+                          </Text>
+                        </HStack>
+                        <HStack gap={2} align="center" width="100%">
+                          <StatusDot variant="neutral" label="Showing" />
+                          <Text type="body" color="secondary">
+                            {visible.length} showing
+                          </Text>
+                        </HStack>
+                        {skippedLabel ? (
+                          <Text type="supporting" color="secondary">
+                            {skippedLabel}
+                          </Text>
+                        ) : null}
+                      </VStack>
+                    ) : (
+                      <Text type="body" color="secondary">
+                        {idleStatusCopy}
+                      </Text>
+                    )}
+
+                    <Divider />
+                    <AboutSection />
+                  </VStack>
+              </VStack>
+            </Card>
+          </LayoutPanel>
+        }
+        end={
+          rightPanelOpen ? (
+            <LayoutPanel
+              width="var(--panel-width)"
+              padding={0}
+              isScrollable
+              label="Details sidebar"
+            >
+              <Card width="100%" height="100%" padding={4}>
+                <VStack gap={4} width="100%" height="100%">
+                  <HStack width="100%" justify="start">
+                    <IconButton
+                      label="Collapse details sidebar"
+                      tooltip="Collapse sidebar"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRightPanelOpen(false)}
+                      icon={<Icon icon={PanelRightClose} size="sm" />}
+                    />
+                  </HStack>
+                  <CloudInfoPanel
+                    kind={cloudKind}
+                    albumDetails={albumDetails}
+                    trackDetails={trackDetails}
+                    albumLoading={albumLoading}
+                    trackLoading={trackLoading}
+                    albumError={albumError}
+                    trackError={trackError}
+                    activeClip={focusedClip}
+                    isLocked={locked != null}
+                  />
                 </VStack>
               </Card>
-
-              <Card width="100%" padding={4}>
-                <CloudInfoPanel
-                  kind={cloudKind}
-                  albumDetails={albumDetails}
-                  trackDetails={trackDetails}
-                  albumLoading={albumLoading}
-                  trackLoading={trackLoading}
-                  albumError={albumError}
-                  trackError={trackError}
-                  activeClip={focusedClip}
-                  isLocked={locked != null}
-                />
-              </Card>
-            </VStack>
-          </LayoutPanel>
+            </LayoutPanel>
+          ) : null
         }
       >
         <LayoutContent padding={0} isScrollable={false} label="Cloud canvas">
           <div className="spa-canvas">
+            {!rightPanelOpen ? (
+              <div className="spa-panel-toggle spa-panel-toggle--end">
+                <IconButton
+                  label="Expand details sidebar"
+                  tooltip="Expand sidebar"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setRightPanelOpen(true)}
+                  icon={<Icon icon={PanelRightOpen} size="sm" />}
+                />
+              </div>
+            ) : null}
             {resolveError && !uploadOpen ? (
               <div className="spa-status">
                 <Banner

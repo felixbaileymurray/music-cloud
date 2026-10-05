@@ -1,8 +1,14 @@
 import { expect, type Page } from "@playwright/test";
 import { clickSeeAnExample, installPreviewMocks } from "./mock-apis";
 
+/** Controls sidebar (brand, create/share/save, import status, about). */
 export function sidebar(page: Page) {
   return page.getByLabel("Cloud sidebar");
+}
+
+/** Album/track details sidebar on the right. */
+export function detailsSidebar(page: Page) {
+  return page.getByLabel("Details sidebar");
 }
 
 export function cloudCovers(page: Page) {
