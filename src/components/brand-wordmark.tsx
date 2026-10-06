@@ -1,14 +1,14 @@
 import { brand } from "@/lib/brand";
 
-/** Mono wordmark from `/public/brand/wordmark_mono_2.svg`. */
+/** Mono horizontal wordmark from `/public/brand/wordmark_mono_horiz.svg`. */
 export function BrandWordmark() {
   return (
     <img
-      src="/brand/wordmark_mono_2.svg"
+      src="/brand/wordmark_mono_horiz.svg"
       alt={brand.nameSentence}
-      width={150}
-      height={150}
-      className="mx-auto block h-auto w-full max-w-[9rem]"
+      width={2363}
+      height={709}
+      className="mx-auto block h-auto w-full"
     />
   );
 }
