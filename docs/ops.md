@@ -34,7 +34,7 @@ Summary:
 4. Tag `vX.Y.Z` on the merge commit on `main`; create the GitHub Release from CHANGELOG notes.
 5. Sync `main` back into `dev` if versions diverge.
 
-While on `0.x`, bump **MINOR** for feature batches and **PATCH** for fixes.
+After `1.0.0`, bump **MINOR** for new capability, **PATCH** for fixes, and **MAJOR** only for breaking user/data changes.
 
 ## Secrets
 
