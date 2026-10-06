@@ -42,10 +42,7 @@ import {
   DEFAULT_CLOUD_PHYSICS,
   type CloudPhysics,
 } from "@/components/cover-cloud";
-import {
-  ResolveStatusMatchCounts,
-  ResolveStatusPopoverButton,
-} from "@/components/resolve-status-summary";
+import { ResolveStatusMatchCounts } from "@/components/resolve-status-summary";
 import { SaveModal } from "@/components/save-modal";
 import { ShareModal } from "@/components/share-modal";
 import { UploadModal } from "@/components/upload-modal";
@@ -702,8 +699,6 @@ export function CloudApp() {
         : `${parsed.skippedRows} rows skipped (no album + artist)`
       : null;
 
-  const showLookupSummary =
-    progress.total > 0 && (phase === "cloud" || phase === "empty-match");
   const cloudSizeMax = Math.max(1, resolved.length);
 
   return (
@@ -909,15 +904,7 @@ export function CloudApp() {
 
                   <HStack width="100%" justify="between" vAlign="center">
                     <AboutSection />
-                    <HStack gap={1} vAlign="center">
-                      {showLookupSummary ? (
-                        <ResolveStatusPopoverButton
-                          progress={progress}
-                          skippedLabel={skippedLabel}
-                        />
-                      ) : null}
-                      <AppControlsButton />
-                    </HStack>
+                    <AppControlsButton />
                   </HStack>
               </VStack>
             </Card>
