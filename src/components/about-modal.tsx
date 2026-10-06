@@ -6,7 +6,6 @@ import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
 import { IconButton } from "@astryxdesign/core/IconButton";
 import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
-import { Link } from "@astryxdesign/core/Link";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import { Globe } from "lucide-react";
@@ -14,7 +13,6 @@ import { GithubIcon } from "@/components/github-icon";
 import { LinkedinIcon } from "@/components/linkedin-icon";
 import { author } from "@/lib/author";
 import { brand } from "@/lib/brand";
-import { APP_VERSION } from "@/lib/version";
 
 export function AboutModal({
   open,
@@ -102,26 +100,6 @@ export function AboutModal({
                   </HStack>
                 </HStack>
               </Card>
-
-              <HStack
-                gap={2}
-                width="100%"
-                justify="between"
-                vAlign="center"
-              >
-                <Text type="supporting" color="secondary">
-                  Version {APP_VERSION}
-                </Text>
-                <Link
-                  href={author.releasesUrl}
-                  isExternalLink
-                  isStandalone
-                  size="sm"
-                  color="secondary"
-                >
-                  View releases
-                </Link>
-              </HStack>
             </VStack>
           </LayoutContent>
         }
