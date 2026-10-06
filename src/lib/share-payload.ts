@@ -1,3 +1,5 @@
+import { SHARE_HASH_PREFIX } from "@/lib/app-id";
+import { brand } from "@/lib/brand";
 import { isTrackHit } from "@/lib/types";
 import type {
   AlbumListen,
@@ -7,11 +9,12 @@ import type {
   TrackListen,
 } from "@/lib/types";
 
+export { SHARE_HASH_PREFIX } from "@/lib/app-id";
+
 export const SHARE_URL_MAX_ITEMS = 50;
-export const SHARE_HASH_PREFIX = "mc1=";
 /** Safe ceiling for encoded hash payload (chars after prefix). */
 export const MAX_SHARE_HASH_LENGTH = 8000;
-export const SHARE_FILE_NAME = "music-cloud-share.json";
+export const SHARE_FILE_NAME = `${brand.slug}-share.json`;
 
 export type ShareDocumentV1 = {
   v: 1;
@@ -101,7 +104,7 @@ export function parseShareJson(text: string): ShareDocumentV1 {
   }
   if (!isShareDocument(parsed)) {
     throw new Error(
-      "Unrecognized share file. Use a Music Cloud share JSON export."
+      `Unrecognized share file. Use a ${brand.nameSentence} share JSON export.`
     );
   }
   return parsed;

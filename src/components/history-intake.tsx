@@ -78,8 +78,8 @@ export function HistoryIntake({
     <VStack gap={5} width="100%">
       <Text type="body" color="secondary">
         {kind === "track"
-          ? "Drop a list of tracks and artists. Matches get cover art and a single track snippet."
-          : "Drop a list of albums and artists. Matches get a cover and up to three rotating snippets."}
+          ? "Drop a list of tracks and artists. We'll find the cover art and an audio snippet of the track."
+          : "Drop a list of albums and artists. We'll find the cover art and a few audio snippets from popular tracks on the album."}
       </Text>
 
       <FileInput
@@ -96,7 +96,7 @@ export function HistoryIntake({
           if (list.length) await readFiles(list);
         }}
         isLoading={busy}
-        description="Spotify extended streaming history works. CSV needs the right columns for your cloud type."
+        description="Spotify export files will work straight away — download your listening history from your Spotify account. If you're uploading a CSV, make sure it's formatted correctly for the collage you want to create."
         placeholder="Drop Spotify JSON, CSV, or text"
         width="100%"
       />

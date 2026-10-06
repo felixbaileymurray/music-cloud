@@ -15,11 +15,11 @@ export default function NotFound() {
       width="100%"
       minHeight="100svh"
     >
-      <Text type="large">That page is not the cloud.</Text>
+      <Text type="large">That link doesn't work.</Text>
       <Text type="body" color="secondary">
-        There is only the listening-history cover cloud.
+        If you're trying to create a collage, try the home page.
       </Text>
-      <Button label="Back" href="/" as={Link} />
+      <Button label="Home" href="/" as={Link} />
     </VStack>
   );
 }

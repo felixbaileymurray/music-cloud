@@ -1,13 +1,18 @@
 {
   "name": "music-cloud",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0 --port 43217",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 43217",
     "lint": "eslint",
-    "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs"
+    "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:install": "playwright install chromium",
+    "theme:build": "astryx theme build src/theme/bricolaTheme.ts -o src/theme/bricola.css",
+    "theme:check": "astryx theme build src/theme/bricolaTheme.ts -o src/theme/bricola.css --check"
   },
   "dependencies": {
     "@astryxdesign/core": "^0.6.2",
@@ -19,7 +24,7 @@
     "d3-force": "^3.0.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.46.0",
-    "next": "16.3.5",
+    "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "shadcn": "^4.21.0",
@@ -27,6 +32,7 @@
   },
   "devDependencies": {
     "@astryxdesign/cli": "^0.6.2",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/d3-force": "^3.0.10",
     "@types/node": "^20",

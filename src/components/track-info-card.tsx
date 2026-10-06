@@ -1,7 +1,6 @@
 "use client";
 
 import { AspectRatio } from "@astryxdesign/core/AspectRatio";
-import { EmptyState } from "@astryxdesign/core/EmptyState";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
@@ -10,7 +9,6 @@ import { MetadataList, MetadataListItem } from "@astryxdesign/core/MetadataList"
 import { Spinner } from "@astryxdesign/core/Spinner";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { Lock } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import {
   AppleMusicIcon,
@@ -52,22 +50,13 @@ export function TrackInfoCard({
   details,
   isLoading,
   error,
-  isLocked = false,
 }: {
   details: TrackDetails | null;
   isLoading: boolean;
   error: string | null;
-  isLocked?: boolean;
 }) {
   return (
     <VStack gap={4} width="100%" align="stretch">
-      <HStack gap={2} width="100%" justify="between" align="center">
-        <Text type="supporting">Track</Text>
-        {isLocked ? (
-          <Icon icon={Lock} size="xsm" color="secondary" label="Track locked" />
-        ) : null}
-      </HStack>
-
       {isLoading ? (
         <VStack gap={3} width="100%" align="center" paddingBlock={4}>
           <Spinner label="Loading track" size="md" />
@@ -81,12 +70,9 @@ export function TrackInfoCard({
       ) : null}
 
       {!isLoading && !error && !details ? (
-        <EmptyState
-          title="No track in focus"
-          description="Hover covers to hear the track snippet and see details. Click to lock a track while you explore."
-          headingLevel={3}
-          isCompact
-        />
+        <Text type="body" color="secondary" display="block" justify="center">
+          Hover to browse, click to lock.
+        </Text>
       ) : null}
 
       {!isLoading && details ? (

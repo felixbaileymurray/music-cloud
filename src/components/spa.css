@@ -16,10 +16,14 @@
 }
 
 /*
- * Layout's middle row (content + end panel) does not inherit gap from the
+ * Layout's middle row (panels + content) does not inherit gap from the
  * outer layout node. Keep the same inset between canvas and sidebar cards.
  */
-.spa-shell .astryx-layout-panel {
+.spa-shell .astryx-layout-panel[aria-label="Cloud sidebar"] {
+  margin-inline-end: var(--inset-page);
+}
+
+.spa-shell .astryx-layout-panel[aria-label="Details sidebar"] {
   margin-inline-start: var(--inset-page);
 }
 
@@ -32,6 +36,16 @@
   border-radius: var(--radius-container);
   background: var(--color-background-body);
   color: var(--color-text-primary);
+}
+
+.spa-panel-toggle {
+  position: absolute;
+  top: var(--spacing-3);
+  z-index: var(--z-sticky);
+}
+
+.spa-panel-toggle--end {
+  inset-inline-end: var(--spacing-3);
 }
 
 .spa-cloud-stage {
@@ -123,4 +137,25 @@
   height: 100%;
   object-fit: cover;
   border-radius: var(--radius-none);
+}
+
+/* Soft pin mark — only while locked; decorative (aria-pressed on the node). */
+.cover-cloud__lock-badge {
+  position: absolute;
+  top: var(--spacing-1-5);
+  inset-inline-end: var(--spacing-1-5);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+  border-radius: var(--radius-full);
+  background: color-mix(
+    in srgb,
+    var(--color-background-surface) 88%,
+    transparent
+  );
+  box-shadow: var(--shadow-low);
+  pointer-events: none;
 }
