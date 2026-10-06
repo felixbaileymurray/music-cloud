@@ -25,15 +25,22 @@ type ResolveStatusSummaryProps = {
 type ResolveStatusMatchCountsProps = {
   progress: ResolveProgress;
   skippedLabel?: string | null;
+  isCentered?: boolean;
 };
 
 export function ResolveStatusMatchCounts({
   progress,
   skippedLabel,
+  isCentered = false,
 }: ResolveStatusMatchCountsProps) {
   return (
-    <VStack gap={2} width="100%">
-      <HStack gap={4} align="center" width="100%">
+    <VStack gap={2} width="100%" align={isCentered ? "center" : "stretch"}>
+      <HStack
+        gap={4}
+        align="center"
+        width="100%"
+        justify={isCentered ? "center" : "start"}
+      >
         <HStack gap={2} align="center">
           <StatusDot variant="success" label="Found" />
           <Text type="body" color="secondary">
@@ -48,7 +55,11 @@ export function ResolveStatusMatchCounts({
         </HStack>
       </HStack>
       {skippedLabel ? (
-        <Text type="supporting" color="secondary">
+        <Text
+          type="supporting"
+          color="secondary"
+          justify={isCentered ? "center" : "start"}
+        >
           {skippedLabel}
         </Text>
       ) : null}

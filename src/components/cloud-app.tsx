@@ -163,6 +163,7 @@ export function CloudApp() {
   const [exploreResetToken, setExploreResetToken] = useState(0);
   const albumDetailsCacheRef = useRef(new Map<string, AlbumDetails>());
   const trackDetailsCacheRef = useRef(new Map<string, TrackDetails>());
+  const resolveRunRef = useRef(0);
 
   const focused = locked ?? hovered;
 
@@ -423,6 +424,18 @@ export function CloudApp() {
     resetExplore();
   }
 
+  function cancelProcessing() {
+    resolveRunRef.current += 1;
+    setPhase("idle");
+    setParsed(null);
+    setResolved([]);
+    setProgress({ done: 0, total: 0, found: 0, dropped: 0 });
+    setResolveError(null);
+    setHovered(null);
+    setLocked(null);
+    setHoverPreview(null);
+  }
+
   async function startAlbumResolve(result: ParseResult) {
     setCloudKind("album");
     setParsed(result);
@@ -439,6 +452,7 @@ export function CloudApp() {
       dropped: 0,
     });
 
+    const runId = ++resolveRunRef.current;
     const kept: PreviewHit[] = [];
     let done = 0;
     let found = 0;
@@ -448,10 +462,12 @@ export function CloudApp() {
 
     async function worker() {
       while (cursor < listens.length) {
+        if (resolveRunRef.current !== runId) return;
         const index = cursor;
         cursor += 1;
         const listen = listens[index];
         const hit = await resolveAlbumOne(listen);
+        if (resolveRunRef.current !== runId) return;
         done += 1;
         if (hit) {
           kept.push(hit);
@@ -465,6 +481,7 @@ export function CloudApp() {
 
     try {
       await Promise.all([worker(), worker()]);
+      if (resolveRunRef.current !== runId) return;
       kept.sort((a, b) => b.listenCount - a.listenCount);
       setResolved(kept);
       setProgress({
@@ -480,6 +497,7 @@ export function CloudApp() {
       setCloudSize(defaultCloudSize(kept.length));
       setPhase("cloud");
     } catch {
+      if (resolveRunRef.current !== runId) return;
       setResolveError("Lookup failed partway through. Try again in a moment.");
       setPhase("idle");
       setUploadOpen(true);
@@ -511,6 +529,7 @@ export function CloudApp() {
       dropped: 0,
     });
 
+    const runId = ++resolveRunRef.current;
     const kept: TrackHit[] = [];
     let done = 0;
     let found = 0;
@@ -519,10 +538,12 @@ export function CloudApp() {
 
     async function worker() {
       while (cursor < listens.length) {
+        if (resolveRunRef.current !== runId) return;
         const index = cursor;
         cursor += 1;
         const listen = listens[index];
         const hit = await resolveTrackOne(listen);
+        if (resolveRunRef.current !== runId) return;
         done += 1;
         if (hit) {
           kept.push(hit);
@@ -536,6 +557,7 @@ export function CloudApp() {
 
     try {
       await Promise.all([worker(), worker()]);
+      if (resolveRunRef.current !== runId) return;
       kept.sort((a, b) => b.listenCount - a.listenCount);
       setResolved(kept);
       setProgress({
@@ -551,6 +573,7 @@ export function CloudApp() {
       setCloudSize(defaultCloudSize(kept.length));
       setPhase("cloud");
     } catch {
+      if (resolveRunRef.current !== runId) return;
       setResolveError("Lookup failed partway through. Try again in a moment.");
       setPhase("idle");
       setUploadOpen(true);
@@ -957,43 +980,63 @@ export function CloudApp() {
 
             {phase === "idle" && !resolveError ? (
               <div className="spa-empty">
-                <EmptyState
-                  title="Cover art collage"
-                  description="Create a collage of track or album art from Spotify or a manual list. Hover over a cover to play a short snippet of audio. Click to lock an item and the details will stay visible."
-                  headingLevel={1}
-                  actions={
-                    !uploadOpen ? (
-                      <Button
-                        label="Create"
-                        variant="primary"
-                        icon={<Icon icon={Plus} size="sm" />}
-                        onClick={openCreate}
-                      />
-                    ) : undefined
-                  }
-                />
+                <VStack gap={4} width="100%" align="center">
+                  <VStack gap={2} width="100%" align="center">
+                    <Heading level={1} justify="center">
+                      Cover art collage
+                    </Heading>
+                    <Text type="body" color="secondary" justify="center">
+                      Create a collage of track or album art from Spotify or a
+                      manual list. Hover over a cover to play a short snippet of
+                      audio. Click to lock an item and the details will stay
+                      visible.
+                    </Text>
+                  </VStack>
+                  {!uploadOpen ? (
+                    <Button
+                      label="Create"
+                      variant="primary"
+                      icon={<Icon icon={Plus} size="sm" />}
+                      onClick={openCreate}
+                    />
+                  ) : null}
+                </VStack>
               </div>
             ) : null}
 
             {phase === "resolve" && parsed ? (
               <div className="spa-status">
-                <VStack gap={4} width="100%">
-                  <Heading level={1}>Fetching covers and audio snippets</Heading>
-                  <Text type="body" color="secondary">
-                    If we can't find a cover or audio snippet, it won't be shown in the collage.
-                  </Text>
-                  <ProgressBar
-                    label="Lookup progress"
-                    value={progressPercent}
-                    max={100}
-                    hasValueLabel
-                    formatValueLabel={() =>
-                      `${progress.done} / ${progress.total}`
-                    }
-                  />
+                <VStack gap={4} width="100%" align="center">
+                  <VStack gap={2} width="100%" align="center">
+                    <Heading level={1} justify="center">
+                      Processing…
+                    </Heading>
+                    <Text type="body" color="secondary" justify="center">
+                      We're finding cover art and audio snippets for the items
+                      you provided. If that information isn't available, we
+                      won't show it in the collage.
+                    </Text>
+                  </VStack>
+                  <VStack width="100%" align="stretch">
+                    <ProgressBar
+                      label="Lookup progress"
+                      value={progressPercent}
+                      max={100}
+                      hasValueLabel
+                      formatValueLabel={() =>
+                        `${progress.done} / ${progress.total}`
+                      }
+                    />
+                  </VStack>
                   <ResolveStatusMatchCounts
                     progress={progress}
                     skippedLabel={skippedLabel}
+                    isCentered
+                  />
+                  <Button
+                    label="Cancel"
+                    variant="secondary"
+                    onClick={cancelProcessing}
                   />
                 </VStack>
               </div>
