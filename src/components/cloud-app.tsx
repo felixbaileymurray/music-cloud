@@ -729,8 +729,9 @@ export function CloudApp() {
                   ) : null}
 
                   {phase === "cloud" ? (
-                    <Collapsible trigger="Customise" defaultIsOpen={false}>
-                      <VStack gap={3} width="100%" paddingBlockStart={3}>
+                    <VStack gap={8} width="100%" paddingBlockStart={2}>
+                      <VStack gap={3} width="100%">
+                        <Heading level={3}>Customise</Heading>
                         <Knob
                           label="Cloud size"
                           hint="How many covers are shown. Defaults to 50 when more are available."
@@ -762,117 +763,115 @@ export function CloudApp() {
                           onChange={setZoom}
                         />
                       </VStack>
-                    </Collapsible>
-                  ) : null}
 
-                  {phase === "cloud" ? (
-                    <Collapsible
-                      trigger="Development Controls"
-                      defaultIsOpen={false}
-                    >
-                      <VStack gap={3} width="100%" paddingBlockStart={3}>
-                        <Knob
-                          label="Collision pad"
-                          hint="Extra gap kept between covers to reduce overlap."
-                          display={`${collisionPad}px`}
-                          min={0}
-                          max={24}
-                          step={1}
-                          value={collisionPad}
-                          onChange={setCollisionPad}
-                        />
-                        <Knob
-                          label="Frame width"
-                          hint="Border thickness around each cover. Visual only — does not affect physics."
-                          display={`${coverFrame}px`}
-                          min={0}
-                          max={8}
-                          step={1}
-                          value={coverFrame}
-                          onChange={setCoverFrame}
-                        />
-                        <Knob
-                          label="Centre pull"
-                          hint="How strongly every cover is pulled toward the middle of the stage."
-                          display={centerStrengthBase.toFixed(3)}
-                          min={0}
-                          max={0.12}
-                          step={0.002}
-                          value={centerStrengthBase}
-                          onChange={setCenterStrengthBase}
-                        />
-                        <Knob
-                          label="Mass pull"
-                          hint="Extra centre pull for larger covers, so heavier albums sit more centrally."
-                          display={centerStrengthMass.toFixed(3)}
-                          min={0}
-                          max={0.4}
-                          step={0.005}
-                          value={centerStrengthMass}
-                          onChange={setCenterStrengthMass}
-                        />
-                        <Knob
-                          label="Charge"
-                          hint="How strongly covers push each other apart. More negative = more repulsion."
-                          display={chargeStrength.toFixed(0)}
-                          min={-40}
-                          max={0}
-                          step={1}
-                          value={chargeStrength}
-                          onChange={setChargeStrength}
-                        />
-                        <Knob
-                          label="Settle speed"
-                          hint="How quickly the simulation cools and the cloud stops drifting."
-                          display={alphaDecay.toFixed(3)}
-                          min={0.005}
-                          max={0.1}
-                          step={0.001}
-                          value={alphaDecay}
-                          onChange={setAlphaDecay}
-                        />
-                        <Knob
-                          label="Collide passes"
-                          hint="How many times per frame overlaps are resolved. Higher is firmer, more CPU."
-                          display={`${collideIterations}`}
-                          min={1}
-                          max={8}
-                          step={1}
-                          value={collideIterations}
-                          onChange={setCollideIterations}
-                        />
-                        <Knob
-                          label="Collide strength"
-                          hint="How firmly overlapping covers are shoved apart on each collide pass."
-                          display={collideStrength.toFixed(2)}
-                          min={0}
-                          max={1}
-                          step={0.05}
-                          value={collideStrength}
-                          onChange={setCollideStrength}
-                        />
-                        <Knob
-                          label="Hover reheat"
-                          hint="How strongly neighbours reflow when a cover swells on hover — not audio or scale speed."
-                          display={hoverReheat.toFixed(2)}
-                          min={0.05}
-                          max={0.5}
-                          step={0.01}
-                          value={hoverReheat}
-                          onChange={setHoverReheat}
-                        />
-                        <Knob
-                          label="Boundary"
-                          hint="How firmly covers are nudged back inside the padded stage edges."
-                          display={boundaryStrength.toFixed(2)}
-                          min={0}
-                          max={1.5}
-                          step={0.05}
-                          value={boundaryStrength}
-                          onChange={setBoundaryStrength}
-                        />
-                      </VStack>
-                    </Collapsible>
+                      <Collapsible
+                        trigger={<Heading level={3}>Development Controls</Heading>}
+                        defaultIsOpen={false}
+                      >
+                        <VStack gap={3} width="100%" paddingBlockStart={3}>
+                          <Knob
+                            label="Collision pad"
+                            hint="Extra gap kept between covers to reduce overlap."
+                            display={`${collisionPad}px`}
+                            min={0}
+                            max={24}
+                            step={1}
+                            value={collisionPad}
+                            onChange={setCollisionPad}
+                          />
+                          <Knob
+                            label="Frame width"
+                            hint="Border thickness around each cover. Visual only — does not affect physics."
+                            display={`${coverFrame}px`}
+                            min={0}
+                            max={8}
+                            step={1}
+                            value={coverFrame}
+                            onChange={setCoverFrame}
+                          />
+                          <Knob
+                            label="Centre pull"
+                            hint="How strongly every cover is pulled toward the middle of the stage."
+                            display={centerStrengthBase.toFixed(3)}
+                            min={0}
+                            max={0.12}
+                            step={0.002}
+                            value={centerStrengthBase}
+                            onChange={setCenterStrengthBase}
+                          />
+                          <Knob
+                            label="Mass pull"
+                            hint="Extra centre pull for larger covers, so heavier albums sit more centrally."
+                            display={centerStrengthMass.toFixed(3)}
+                            min={0}
+                            max={0.4}
+                            step={0.005}
+                            value={centerStrengthMass}
+                            onChange={setCenterStrengthMass}
+                          />
+                          <Knob
+                            label="Charge"
+                            hint="How strongly covers push each other apart. More negative = more repulsion."
+                            display={chargeStrength.toFixed(0)}
+                            min={-40}
+                            max={0}
+                            step={1}
+                            value={chargeStrength}
+                            onChange={setChargeStrength}
+                          />
+                          <Knob
+                            label="Settle speed"
+                            hint="How quickly the simulation cools and the cloud stops drifting."
+                            display={alphaDecay.toFixed(3)}
+                            min={0.005}
+                            max={0.1}
+                            step={0.001}
+                            value={alphaDecay}
+                            onChange={setAlphaDecay}
+                          />
+                          <Knob
+                            label="Collide passes"
+                            hint="How many times per frame overlaps are resolved. Higher is firmer, more CPU."
+                            display={`${collideIterations}`}
+                            min={1}
+                            max={8}
+                            step={1}
+                            value={collideIterations}
+                            onChange={setCollideIterations}
+                          />
+                          <Knob
+                            label="Collide strength"
+                            hint="How firmly overlapping covers are shoved apart on each collide pass."
+                            display={collideStrength.toFixed(2)}
+                            min={0}
+                            max={1}
+                            step={0.05}
+                            value={collideStrength}
+                            onChange={setCollideStrength}
+                          />
+                          <Knob
+                            label="Hover reheat"
+                            hint="How strongly neighbours reflow when a cover swells on hover — not audio or scale speed."
+                            display={hoverReheat.toFixed(2)}
+                            min={0.05}
+                            max={0.5}
+                            step={0.01}
+                            value={hoverReheat}
+                            onChange={setHoverReheat}
+                          />
+                          <Knob
+                            label="Boundary"
+                            hint="How firmly covers are nudged back inside the padded stage edges."
+                            display={boundaryStrength.toFixed(2)}
+                            min={0}
+                            max={1.5}
+                            step={0.05}
+                            value={boundaryStrength}
+                            onChange={setBoundaryStrength}
+                          />
+                        </VStack>
+                      </Collapsible>
+                    </VStack>
                   ) : null}
 
                   <StackItem size="fill" />
