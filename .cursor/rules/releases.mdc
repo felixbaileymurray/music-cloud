@@ -15,7 +15,7 @@ Bricola uses [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`). T
 | **MINOR** | New user-visible capability |
 | **PATCH** | Fixes and small tweaks with no new capability |
 
-Stay on **0.x** until a deliberate first shipped-product release (`1.0.0`). While on 0.x, bump **MINOR** for feature batches and **PATCH** for fixes.
+After the first shipped-product release (`1.0.0`), bump **MINOR** for new capability, **PATCH** for fixes, and **MAJOR** only for breaking user/data changes.
 
 ## Branch model
 
