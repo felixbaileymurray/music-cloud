@@ -100,7 +100,7 @@ const DEFAULT_COVER_FRAME = 5;
 export function CloudApp() {
   const [showDevControls] = useShowDevControls();
   const [phase, setPhase] = useState<Phase>("idle");
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [exportNeutral, setExportNeutral] = useState(false);
@@ -200,6 +200,10 @@ export function CloudApp() {
 
   const canDismissUpload = phase !== "resolve";
   const hasCloud = phase === "cloud";
+
+  useEffect(() => {
+    setRightPanelOpen(hasCloud);
+  }, [hasCloud]);
 
   const shareDocument = useMemo(() => {
     if (!parsed || phase !== "cloud" || visible.length === 0) return null;
