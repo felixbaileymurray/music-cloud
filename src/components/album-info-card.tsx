@@ -11,7 +11,7 @@ import { Spinner } from "@astryxdesign/core/Spinner";
 import { Text } from "@astryxdesign/core/Text";
 import { Token } from "@astryxdesign/core/Token";
 import { VStack } from "@astryxdesign/core/VStack";
-import { AudioLines, Lock } from "lucide-react";
+import { AudioLines } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import {
   AppleMusicIcon,
@@ -71,23 +71,14 @@ export function AlbumInfoCard({
   isLoading,
   error,
   activeClip = null,
-  isLocked = false,
 }: {
   details: AlbumDetails | null;
   isLoading: boolean;
   error: string | null;
   activeClip?: ClipRef | null;
-  isLocked?: boolean;
 }) {
   return (
     <VStack gap={4} width="100%" align="stretch">
-      <HStack gap={2} width="100%" justify="between" align="center">
-        <Text type="supporting">Album</Text>
-        {isLocked ? (
-          <Icon icon={Lock} size="xsm" color="secondary" label="Album locked" />
-        ) : null}
-      </HStack>
-
       {isLoading ? (
         <VStack gap={3} width="100%" align="center" paddingBlock={4}>
           <Spinner label="Loading album" size="md" />

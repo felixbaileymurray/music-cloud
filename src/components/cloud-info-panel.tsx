@@ -19,7 +19,6 @@ export function CloudInfoPanel({
   albumError,
   trackError,
   activeClip,
-  isLocked,
 }: {
   kind: CloudKind;
   albumDetails: AlbumDetails | null;
@@ -29,7 +28,6 @@ export function CloudInfoPanel({
   albumError: string | null;
   trackError: string | null;
   activeClip: ClipRef | null;
-  isLocked: boolean;
 }) {
   if (kind === "artist") {
     return (
@@ -48,7 +46,6 @@ export function CloudInfoPanel({
         details={trackDetails}
         isLoading={trackLoading}
         error={trackError}
-        isLocked={isLocked}
       />
     );
   }
@@ -59,7 +56,6 @@ export function CloudInfoPanel({
       isLoading={albumLoading}
       error={albumError}
       activeClip={activeClip}
-      isLocked={isLocked}
     />
   );
 }

@@ -494,6 +494,21 @@ export const bricolaTheme = {
       "base": {
         "padding": "var(--spacing-3)"
       }
+    },
+    "dialog": {
+      "base": {
+        "padding": "var(--spacing-6)"
+      }
+    },
+    "dialog-header": {
+      "base": {
+        "alignItems": "flex-start"
+      }
+    },
+    "dialog-header-title-block": {
+      "base": {
+        "paddingTop": "var(--spacing-2)"
+      }
     }
   },
   __onDark: {

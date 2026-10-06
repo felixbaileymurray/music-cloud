@@ -641,6 +641,18 @@
     --astryx-section-padding: var(--spacing-3);
   }
 
+  .astryx-dialog {
+    --astryx-dialog-padding: var(--spacing-6);
+  }
+
+  .astryx-dialog-header {
+    align-items: flex-start;
+  }
+
+  .astryx-dialog-header-title-block {
+    padding-top: var(--spacing-2);
+  }
+
   .astryx-text[data-color="primary"] { color: var(--color-text-primary); }
 
   .astryx-heading[data-color="primary"] { color: var(--color-text-primary); }

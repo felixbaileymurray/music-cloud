@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import { isShareDocument } from "../../../src/lib/share-payload";
 
 test.describe("save cloud", () => {
-  test("downloads JSON snapshot of visible items", async ({ page }) => {
+  test("downloads file backup of visible items", async ({ page }) => {
     await seedCloudViaExample(page);
 
     await sidebar(page).getByRole("button", { name: "Save" }).click();

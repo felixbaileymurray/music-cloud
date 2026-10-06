@@ -17,14 +17,24 @@ import { Grid } from "@astryxdesign/core/Grid";
 import { Heading } from "@astryxdesign/core/Heading";
 import { HStack } from "@astryxdesign/core/HStack";
 import { Icon } from "@astryxdesign/core/Icon";
+import { IconButton } from "@astryxdesign/core/IconButton";
 import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
+import { StackItem } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { Download, Plus, Share2 } from "lucide-react";
+import {
+  Download,
+  ListMusic,
+  PanelRightClose,
+  Plus,
+  Share2,
+} from "lucide-react";
+import { AboutSection } from "@/components/about-section";
+import { AppControlsButton } from "@/components/app-controls-modal";
 import { BrandWordmark } from "@/components/brand-wordmark";
+import { useShowDevControls } from "@/lib/dev-controls-pref";
 import { CloudInfoPanel } from "@/components/cloud-info-panel";
 import { CreateCloudFlow } from "@/components/create-cloud-flow";
 import {
@@ -32,6 +42,7 @@ import {
   DEFAULT_CLOUD_PHYSICS,
   type CloudPhysics,
 } from "@/components/cover-cloud";
+import { ResolveStatusMatchCounts } from "@/components/resolve-status-summary";
 import { SaveModal } from "@/components/save-modal";
 import { ShareModal } from "@/components/share-modal";
 import { UploadModal } from "@/components/upload-modal";
@@ -84,7 +95,9 @@ const DEFAULT_COLLISION_PAD = 10;
 const DEFAULT_COVER_FRAME = 5;
 
 export function CloudApp() {
+  const [showDevControls] = useShowDevControls();
   const [phase, setPhase] = useState<Phase>("idle");
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [exportNeutral, setExportNeutral] = useState(false);
@@ -150,6 +163,7 @@ export function CloudApp() {
   const [exploreResetToken, setExploreResetToken] = useState(0);
   const albumDetailsCacheRef = useRef(new Map<string, AlbumDetails>());
   const trackDetailsCacheRef = useRef(new Map<string, TrackDetails>());
+  const resolveRunRef = useRef(0);
 
   const focused = locked ?? hovered;
 
@@ -183,6 +197,10 @@ export function CloudApp() {
 
   const canDismissUpload = phase !== "resolve";
   const hasCloud = phase === "cloud";
+
+  useEffect(() => {
+    setRightPanelOpen(hasCloud);
+  }, [hasCloud]);
 
   const shareDocument = useMemo(() => {
     if (!parsed || phase !== "cloud" || visible.length === 0) return null;
@@ -410,6 +428,18 @@ export function CloudApp() {
     resetExplore();
   }
 
+  function cancelProcessing() {
+    resolveRunRef.current += 1;
+    setPhase("idle");
+    setParsed(null);
+    setResolved([]);
+    setProgress({ done: 0, total: 0, found: 0, dropped: 0 });
+    setResolveError(null);
+    setHovered(null);
+    setLocked(null);
+    setHoverPreview(null);
+  }
+
   async function startAlbumResolve(result: ParseResult) {
     setCloudKind("album");
     setParsed(result);
@@ -426,6 +456,7 @@ export function CloudApp() {
       dropped: 0,
     });
 
+    const runId = ++resolveRunRef.current;
     const kept: PreviewHit[] = [];
     let done = 0;
     let found = 0;
@@ -435,10 +466,12 @@ export function CloudApp() {
 
     async function worker() {
       while (cursor < listens.length) {
+        if (resolveRunRef.current !== runId) return;
         const index = cursor;
         cursor += 1;
         const listen = listens[index];
         const hit = await resolveAlbumOne(listen);
+        if (resolveRunRef.current !== runId) return;
         done += 1;
         if (hit) {
           kept.push(hit);
@@ -452,6 +485,7 @@ export function CloudApp() {
 
     try {
       await Promise.all([worker(), worker()]);
+      if (resolveRunRef.current !== runId) return;
       kept.sort((a, b) => b.listenCount - a.listenCount);
       setResolved(kept);
       setProgress({
@@ -467,6 +501,7 @@ export function CloudApp() {
       setCloudSize(defaultCloudSize(kept.length));
       setPhase("cloud");
     } catch {
+      if (resolveRunRef.current !== runId) return;
       setResolveError("Lookup failed partway through. Try again in a moment.");
       setPhase("idle");
       setUploadOpen(true);
@@ -498,6 +533,7 @@ export function CloudApp() {
       dropped: 0,
     });
 
+    const runId = ++resolveRunRef.current;
     const kept: TrackHit[] = [];
     let done = 0;
     let found = 0;
@@ -506,10 +542,12 @@ export function CloudApp() {
 
     async function worker() {
       while (cursor < listens.length) {
+        if (resolveRunRef.current !== runId) return;
         const index = cursor;
         cursor += 1;
         const listen = listens[index];
         const hit = await resolveTrackOne(listen);
+        if (resolveRunRef.current !== runId) return;
         done += 1;
         if (hit) {
           kept.push(hit);
@@ -523,6 +561,7 @@ export function CloudApp() {
 
     try {
       await Promise.all([worker(), worker()]);
+      if (resolveRunRef.current !== runId) return;
       kept.sort((a, b) => b.listenCount - a.listenCount);
       setResolved(kept);
       setProgress({
@@ -538,6 +577,7 @@ export function CloudApp() {
       setCloudSize(defaultCloudSize(kept.length));
       setPhase("cloud");
     } catch {
+      if (resolveRunRef.current !== runId) return;
       setResolveError("Lookup failed partway through. Try again in a moment.");
       setPhase("idle");
       setUploadOpen(true);
@@ -659,15 +699,7 @@ export function CloudApp() {
         : `${parsed.skippedRows} rows skipped (no album + artist)`
       : null;
 
-  const showResolveStatus =
-    progress.total > 0 &&
-    (phase === "resolve" || phase === "cloud" || phase === "empty-match");
-  const isResolving = phase === "resolve";
   const cloudSizeMax = Math.max(1, resolved.length);
-
-  const idleStatusCopy =
-    "Create a collage of track or album covers from Spotify or a manual list";
-  const emptyStatusCopy = "No snippets matched";
 
   return (
     <div
@@ -681,106 +713,49 @@ export function CloudApp() {
       <Layout
         height="fill"
         padding={0}
-        end={
+        start={
           <LayoutPanel
             width="var(--panel-width)"
             padding={0}
             isScrollable
             label="Cloud sidebar"
           >
-            <VStack gap={4} width="100%" paddingBlock={0} hAlign="center">
-              <Card width="100%" padding={4}>
-                <VStack gap={5} width="100%">
+            <Card width="100%" height="100%" padding={4}>
+              <VStack gap={5} width="100%" height="100%">
                   <BrandWordmark />
 
-                  <VStack gap={2} width="100%">
-                    {hasCloud ? (
-                      <>
-                        <Button
-                          label="Share"
-                          variant="primary"
-                          icon={<Icon icon={Share2} size="sm" />}
-                          width="100%"
-                          onClick={openShare}
-                        />
-                        <Grid columns={2} gap={2} width="100%">
-                          <Button
-                            label="Create"
-                            variant="secondary"
-                            icon={<Icon icon={Plus} size="sm" />}
-                            onClick={openCreate}
-                            width="100%"
-                          />
-                          <Button
-                            label="Save"
-                            variant="secondary"
-                            icon={<Icon icon={Download} size="sm" />}
-                            width="100%"
-                            onClick={openSave}
-                          />
-                        </Grid>
-                      </>
-                    ) : (
-                      <Button
-                        label="Create"
-                        variant="primary"
-                        icon={<Icon icon={Plus} size="sm" />}
-                        onClick={openCreate}
-                        width="100%"
-                      />
-                    )}
-                  </VStack>
-
-                  {showResolveStatus ? (
+                  {hasCloud ? (
                     <VStack gap={2} width="100%">
-                      {phase === "empty-match" ? (
-                        <Text type="body" color="secondary">
-                          {emptyStatusCopy}
-                        </Text>
-                      ) : null}
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot
-                          variant="accent"
-                          label="Processed"
-                          isPulsing={isResolving}
+                      <Button
+                        label="Share"
+                        variant="primary"
+                        icon={<Icon icon={Share2} size="sm" />}
+                        width="100%"
+                        onClick={openShare}
+                      />
+                      <Grid columns={2} gap={2} width="100%">
+                        <Button
+                          label="Create"
+                          variant="secondary"
+                          icon={<Icon icon={Plus} size="sm" />}
+                          onClick={openCreate}
+                          width="100%"
                         />
-                        <Text type="body" color="secondary">
-                          {progress.done}/{progress.total} processed
-                        </Text>
-                      </HStack>
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot variant="success" label="Found" />
-                        <Text type="body" color="secondary">
-                          {progress.found} found
-                        </Text>
-                      </HStack>
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot variant="error" label="Not found" />
-                        <Text type="body" color="secondary">
-                          {progress.dropped} not found
-                        </Text>
-                      </HStack>
-                      <HStack gap={2} align="center" width="100%">
-                        <StatusDot variant="neutral" label="Showing" />
-                        <Text type="body" color="secondary">
-                          {visible.length} showing
-                        </Text>
-                      </HStack>
-                      {skippedLabel ? (
-                        <Text type="supporting" color="secondary">
-                          {skippedLabel}
-                        </Text>
-                      ) : null}
+                        <Button
+                          label="Save"
+                          variant="secondary"
+                          icon={<Icon icon={Download} size="sm" />}
+                          width="100%"
+                          onClick={openSave}
+                        />
+                      </Grid>
                     </VStack>
-                  ) : (
-                    <Text type="body" color="secondary">
-                      {idleStatusCopy}
-                    </Text>
-                  )}
+                  ) : null}
 
                   {phase === "cloud" ? (
-                    <Collapsible trigger="Customise" defaultIsOpen={false}>
-                      <VStack gap={3} width="100%" paddingBlockStart={3}>
+                    <VStack gap={8} width="100%" paddingBlockStart={2}>
+                      <VStack gap={3} width="100%">
+                        <Heading level={3}>Customise</Heading>
                         <Knob
                           label="Cloud size"
                           hint="How many covers are shown. Defaults to 50 when more are available."
@@ -812,140 +787,179 @@ export function CloudApp() {
                           onChange={setZoom}
                         />
                       </VStack>
-                    </Collapsible>
+
+                      {showDevControls ? (
+                        <Collapsible
+                          trigger={<Heading level={3}>Dev Controls</Heading>}
+                          defaultIsOpen={false}
+                        >
+                          <VStack gap={3} width="100%" paddingBlockStart={3}>
+                            <Knob
+                              label="Collision pad"
+                              hint="Extra gap kept between covers to reduce overlap."
+                              display={`${collisionPad}px`}
+                              min={0}
+                              max={24}
+                              step={1}
+                              value={collisionPad}
+                              onChange={setCollisionPad}
+                            />
+                            <Knob
+                              label="Frame width"
+                              hint="Border thickness around each cover. Visual only — does not affect physics."
+                              display={`${coverFrame}px`}
+                              min={0}
+                              max={8}
+                              step={1}
+                              value={coverFrame}
+                              onChange={setCoverFrame}
+                            />
+                            <Knob
+                              label="Centre pull"
+                              hint="How strongly every cover is pulled toward the middle of the stage."
+                              display={centerStrengthBase.toFixed(3)}
+                              min={0}
+                              max={0.12}
+                              step={0.002}
+                              value={centerStrengthBase}
+                              onChange={setCenterStrengthBase}
+                            />
+                            <Knob
+                              label="Mass pull"
+                              hint="Extra centre pull for larger covers, so heavier albums sit more centrally."
+                              display={centerStrengthMass.toFixed(3)}
+                              min={0}
+                              max={0.4}
+                              step={0.005}
+                              value={centerStrengthMass}
+                              onChange={setCenterStrengthMass}
+                            />
+                            <Knob
+                              label="Charge"
+                              hint="How strongly covers push each other apart. More negative = more repulsion."
+                              display={chargeStrength.toFixed(0)}
+                              min={-40}
+                              max={0}
+                              step={1}
+                              value={chargeStrength}
+                              onChange={setChargeStrength}
+                            />
+                            <Knob
+                              label="Settle speed"
+                              hint="How quickly the simulation cools and the cloud stops drifting."
+                              display={alphaDecay.toFixed(3)}
+                              min={0.005}
+                              max={0.1}
+                              step={0.001}
+                              value={alphaDecay}
+                              onChange={setAlphaDecay}
+                            />
+                            <Knob
+                              label="Collide passes"
+                              hint="How many times per frame overlaps are resolved. Higher is firmer, more CPU."
+                              display={`${collideIterations}`}
+                              min={1}
+                              max={8}
+                              step={1}
+                              value={collideIterations}
+                              onChange={setCollideIterations}
+                            />
+                            <Knob
+                              label="Collide strength"
+                              hint="How firmly overlapping covers are shoved apart on each collide pass."
+                              display={collideStrength.toFixed(2)}
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              value={collideStrength}
+                              onChange={setCollideStrength}
+                            />
+                            <Knob
+                              label="Hover reheat"
+                              hint="How strongly neighbours reflow when a cover swells on hover — not audio or scale speed."
+                              display={hoverReheat.toFixed(2)}
+                              min={0.05}
+                              max={0.5}
+                              step={0.01}
+                              value={hoverReheat}
+                              onChange={setHoverReheat}
+                            />
+                            <Knob
+                              label="Boundary"
+                              hint="How firmly covers are nudged back inside the padded stage edges."
+                              display={boundaryStrength.toFixed(2)}
+                              min={0}
+                              max={1.5}
+                              step={0.05}
+                              value={boundaryStrength}
+                              onChange={setBoundaryStrength}
+                            />
+                          </VStack>
+                        </Collapsible>
+                      ) : null}
+                    </VStack>
                   ) : null}
 
-                  {phase === "cloud" ? (
-                    <Collapsible
-                      trigger="Development Controls"
-                      defaultIsOpen={false}
-                    >
-                      <VStack gap={3} width="100%" paddingBlockStart={3}>
-                        <Knob
-                          label="Collision pad"
-                          hint="Extra gap kept between covers to reduce overlap."
-                          display={`${collisionPad}px`}
-                          min={0}
-                          max={24}
-                          step={1}
-                          value={collisionPad}
-                          onChange={setCollisionPad}
-                        />
-                        <Knob
-                          label="Frame width"
-                          hint="Border thickness around each cover. Visual only — does not affect physics."
-                          display={`${coverFrame}px`}
-                          min={0}
-                          max={8}
-                          step={1}
-                          value={coverFrame}
-                          onChange={setCoverFrame}
-                        />
-                        <Knob
-                          label="Centre pull"
-                          hint="How strongly every cover is pulled toward the middle of the stage."
-                          display={centerStrengthBase.toFixed(3)}
-                          min={0}
-                          max={0.12}
-                          step={0.002}
-                          value={centerStrengthBase}
-                          onChange={setCenterStrengthBase}
-                        />
-                        <Knob
-                          label="Mass pull"
-                          hint="Extra centre pull for larger covers, so heavier albums sit more centrally."
-                          display={centerStrengthMass.toFixed(3)}
-                          min={0}
-                          max={0.4}
-                          step={0.005}
-                          value={centerStrengthMass}
-                          onChange={setCenterStrengthMass}
-                        />
-                        <Knob
-                          label="Charge"
-                          hint="How strongly covers push each other apart. More negative = more repulsion."
-                          display={chargeStrength.toFixed(0)}
-                          min={-40}
-                          max={0}
-                          step={1}
-                          value={chargeStrength}
-                          onChange={setChargeStrength}
-                        />
-                        <Knob
-                          label="Settle speed"
-                          hint="How quickly the simulation cools and the cloud stops drifting."
-                          display={alphaDecay.toFixed(3)}
-                          min={0.005}
-                          max={0.1}
-                          step={0.001}
-                          value={alphaDecay}
-                          onChange={setAlphaDecay}
-                        />
-                        <Knob
-                          label="Collide passes"
-                          hint="How many times per frame overlaps are resolved. Higher is firmer, more CPU."
-                          display={`${collideIterations}`}
-                          min={1}
-                          max={8}
-                          step={1}
-                          value={collideIterations}
-                          onChange={setCollideIterations}
-                        />
-                        <Knob
-                          label="Collide strength"
-                          hint="How firmly overlapping covers are shoved apart on each collide pass."
-                          display={collideStrength.toFixed(2)}
-                          min={0}
-                          max={1}
-                          step={0.05}
-                          value={collideStrength}
-                          onChange={setCollideStrength}
-                        />
-                        <Knob
-                          label="Hover reheat"
-                          hint="How strongly neighbours reflow when a cover swells on hover — not audio or scale speed."
-                          display={hoverReheat.toFixed(2)}
-                          min={0.05}
-                          max={0.5}
-                          step={0.01}
-                          value={hoverReheat}
-                          onChange={setHoverReheat}
-                        />
-                        <Knob
-                          label="Boundary"
-                          hint="How firmly covers are nudged back inside the padded stage edges."
-                          display={boundaryStrength.toFixed(2)}
-                          min={0}
-                          max={1.5}
-                          step={0.05}
-                          value={boundaryStrength}
-                          onChange={setBoundaryStrength}
-                        />
-                      </VStack>
-                    </Collapsible>
-                  ) : null}
+                  <StackItem size="fill" />
+
+                  <HStack width="100%" justify="between" vAlign="center">
+                    <AboutSection />
+                    <AppControlsButton />
+                  </HStack>
+              </VStack>
+            </Card>
+          </LayoutPanel>
+        }
+        end={
+          rightPanelOpen ? (
+            <LayoutPanel
+              width="var(--panel-width)"
+              padding={0}
+              isScrollable
+              label="Details sidebar"
+            >
+              <Card width="100%" height="100%" padding={4}>
+                <VStack gap={4} width="100%" height="100%">
+                  <HStack width="100%" justify="start">
+                    <IconButton
+                      label="Collapse details sidebar"
+                      tooltip="Collapse sidebar"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRightPanelOpen(false)}
+                      icon={<Icon icon={PanelRightClose} size="sm" />}
+                    />
+                  </HStack>
+                  <CloudInfoPanel
+                    kind={cloudKind}
+                    albumDetails={albumDetails}
+                    trackDetails={trackDetails}
+                    albumLoading={albumLoading}
+                    trackLoading={trackLoading}
+                    albumError={albumError}
+                    trackError={trackError}
+                    activeClip={focusedClip}
+                  />
                 </VStack>
               </Card>
-
-              <Card width="100%" padding={4}>
-                <CloudInfoPanel
-                  kind={cloudKind}
-                  albumDetails={albumDetails}
-                  trackDetails={trackDetails}
-                  albumLoading={albumLoading}
-                  trackLoading={trackLoading}
-                  albumError={albumError}
-                  trackError={trackError}
-                  activeClip={focusedClip}
-                  isLocked={locked != null}
-                />
-              </Card>
-            </VStack>
-          </LayoutPanel>
+            </LayoutPanel>
+          ) : null
         }
       >
         <LayoutContent padding={0} isScrollable={false} label="Cloud canvas">
           <div className="spa-canvas">
+            {!rightPanelOpen ? (
+              <div className="spa-panel-toggle spa-panel-toggle--end">
+                <IconButton
+                  label="Expand details sidebar"
+                  tooltip="Show details"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setRightPanelOpen(true)}
+                  icon={<Icon icon={ListMusic} size="sm" />}
+                />
+              </div>
+            ) : null}
             {resolveError && !uploadOpen ? (
               <div className="spa-status">
                 <Banner
@@ -965,38 +979,63 @@ export function CloudApp() {
 
             {phase === "idle" && !resolveError ? (
               <div className="spa-empty">
-                <EmptyState
-                  title="Cover art collage"
-                  description="Create a collage of track or album art from Spotify or a manual list. Hover over a cover to play a short snippet of audio. Click to lock an item and the details will stay visible."
-                  headingLevel={1}
-                  actions={
-                    !uploadOpen ? (
-                      <Button
-                        label="Create"
-                        variant="primary"
-                        onClick={openCreate}
-                      />
-                    ) : undefined
-                  }
-                />
+                <VStack gap={4} width="100%" align="center">
+                  <VStack gap={2} width="100%" align="center">
+                    <Heading level={1} justify="center">
+                      Cover art collage
+                    </Heading>
+                    <Text type="body" color="secondary" justify="center">
+                      Create a collage of track or album art from Spotify or a
+                      manual list. Hover over a cover to play a short snippet of
+                      audio. Click to lock an item and the details will stay
+                      visible.
+                    </Text>
+                  </VStack>
+                  {!uploadOpen ? (
+                    <Button
+                      label="Create"
+                      variant="primary"
+                      icon={<Icon icon={Plus} size="sm" />}
+                      onClick={openCreate}
+                    />
+                  ) : null}
+                </VStack>
               </div>
             ) : null}
 
             {phase === "resolve" && parsed ? (
               <div className="spa-status">
-                <VStack gap={4} width="100%">
-                  <Heading level={1}>Fetching covers and audio snippets</Heading>
-                  <Text type="body" color="secondary">
-                    If we can't find a cover or audio snippet, it won't be shown in the collage.
-                  </Text>
-                  <ProgressBar
-                    label="Lookup progress"
-                    value={progressPercent}
-                    max={100}
-                    hasValueLabel
-                    formatValueLabel={() =>
-                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} not found`
-                    }
+                <VStack gap={4} width="100%" align="center">
+                  <VStack gap={2} width="100%" align="center">
+                    <Heading level={1} justify="center">
+                      Processing…
+                    </Heading>
+                    <Text type="body" color="secondary" justify="center">
+                      We're finding cover art and audio snippets for the items
+                      you provided. If that information isn't available, we
+                      won't show it in the collage.
+                    </Text>
+                  </VStack>
+                  <VStack width="100%" align="stretch">
+                    <ProgressBar
+                      label="Lookup progress"
+                      value={progressPercent}
+                      max={100}
+                      hasValueLabel
+                      formatValueLabel={() =>
+                        `${progress.done} / ${progress.total}`
+                      }
+                    />
+                  </VStack>
+                  <ResolveStatusMatchCounts
+                    progress={progress}
+                    skippedLabel={skippedLabel}
+                    isCentered
+                  />
+                  <Button
+                    label="Cancel"
+                    variant="secondary"
+                    onClick={cancelProcessing}
                   />
                 </VStack>
               </div>

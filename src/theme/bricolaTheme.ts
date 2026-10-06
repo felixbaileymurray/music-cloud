@@ -32,4 +32,23 @@ export const bricolaTheme = defineTheme({
       fallbacks: systemSans,
     },
   },
+  components: {
+    dialog: {
+      base: {
+        padding: "var(--spacing-6)",
+      },
+    },
+    // Keep the close control on the padding box; only the title needs an
+    // optical nudge (bold caps fill the line box more than side bearings).
+    "dialog-header": {
+      base: {
+        alignItems: "flex-start",
+      },
+    },
+    "dialog-header-title-block": {
+      base: {
+        paddingTop: "var(--spacing-2)",
+      },
+    },
+  },
 });
