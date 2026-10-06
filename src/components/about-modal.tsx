@@ -8,7 +8,7 @@ import { IconButton } from "@astryxdesign/core/IconButton";
 import { Layout, LayoutContent } from "@astryxdesign/core/Layout";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
-import { Globe } from "lucide-react";
+import { Mail } from "lucide-react";
 import { GithubIcon } from "@/components/github-icon";
 import { LinkedinIcon } from "@/components/linkedin-icon";
 import { author } from "@/lib/author";
@@ -68,14 +68,12 @@ export function AboutModal({
                   <Text type="body">Created by {author.name}</Text>
                   <HStack gap={1} vAlign="center">
                     <IconButton
-                      label="Website"
-                      tooltip="Website"
+                      label="Email"
+                      tooltip="Email"
                       variant="ghost"
                       size="sm"
-                      href={author.websiteUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      icon={<Icon icon={Globe} size="sm" />}
+                      href={`mailto:${author.email}`}
+                      icon={<Icon icon={Mail} size="sm" />}
                     />
                     <IconButton
                       label="GitHub"

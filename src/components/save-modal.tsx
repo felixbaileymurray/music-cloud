@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
+import { Heading } from "@astryxdesign/core/Heading";
 import { Icon } from "@astryxdesign/core/Icon";
 import { RadioList, RadioListItem } from "@astryxdesign/core/RadioList";
 import {
@@ -23,7 +24,6 @@ import {
 } from "@/lib/save-image";
 import {
   shareDocumentToJson,
-  shareItemTypeLabel,
   type ShareDocumentV1,
 } from "@/lib/share-payload";
 import type { CloudKind } from "@/lib/types";
@@ -97,13 +97,13 @@ export function SaveModal({
         </Text>
 
         <VStack gap={4} width="100%">
-          <Text type="supporting">Image</Text>
+          <Heading level={3}>Image</Heading>
           <Text type="body" color="secondary">
             The exported image will contain everything you can see on the canvas, and the size and aspect ratio will stay the same.
           </Text>
 
           <VStack gap={2} width="100%">
-            <Text type="supporting">Format</Text>
+            <Heading level={4}>Format</Heading>
             <SegmentedControl
               label="Image format"
               value={format}
@@ -117,29 +117,33 @@ export function SaveModal({
             </SegmentedControl>
           </VStack>
 
-          <RadioList
-            label="Resolution"
-            description="How many pixels relative to the on-screen canvas. Higher resolution means a bigger file."
-            value={resolution}
-            onChange={(value) => setResolution(value as SaveResolutionPreset)}
-            width="100%"
-          >
-            <RadioListItem
-              value="low"
-              label="Low"
-              description="1× — lower quality, smaller file"
-            />
-            <RadioListItem
-              value="medium"
-              label="Medium"
-              description="2× — good for sharing"
-            />
-            <RadioListItem
-              value="high"
-              label="High"
-              description="3× — sharper for print or zoom"
-            />
-          </RadioList>
+          <VStack gap={2} width="100%">
+            <Heading level={4}>Resolution</Heading>
+            <RadioList
+              label="Resolution"
+              isLabelHidden
+              description="How many pixels relative to the on-screen canvas. Higher resolution means a bigger file."
+              value={resolution}
+              onChange={(value) => setResolution(value as SaveResolutionPreset)}
+              width="100%"
+            >
+              <RadioListItem
+                value="low"
+                label="Low"
+                description="1× — lower quality, smaller file"
+              />
+              <RadioListItem
+                value="medium"
+                label="Medium"
+                description="2× — good for sharing"
+              />
+              <RadioListItem
+                value="high"
+                label="High"
+                description="3× — sharper for print or zoom"
+              />
+            </RadioList>
+          </VStack>
 
           <Button
             label="Download image"
@@ -153,10 +157,10 @@ export function SaveModal({
         </VStack>
 
         <VStack gap={3} width="100%">
-          <Text type="supporting">JSON snapshot</Text>
+          <Heading level={3}>File Backup</Heading>
           <Text type="body" color="secondary">
             {shareDoc
-              ? `Flat list of the ${shareItemTypeLabel(cloudKind, listenCount)} currently in the cloud. Re-upload it in Create later — same format as Share.`
+              ? `Save a list containing data about the ${listenCount} items currently shown in the collage. You can re-upload the file later to create another collage.`
               : "Create a cloud first to save a JSON backup."}
           </Text>
           <Button

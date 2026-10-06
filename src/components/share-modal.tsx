@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Banner } from "@astryxdesign/core/Banner";
 import { Button } from "@astryxdesign/core/Button";
-import { HStack } from "@astryxdesign/core/HStack";
+import { Grid } from "@astryxdesign/core/Grid";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
@@ -121,11 +121,12 @@ export function ShareModal({
             />
           ) : null}
 
-          <HStack gap={2} width="100%" wrap="wrap">
+          <Grid columns={2} gap={2} width="100%">
             <Button
               label="Copy share link"
               variant="primary"
               icon={<Icon icon={Link2} size="sm" />}
+              width="100%"
               isDisabled={urlDisabled}
               isLoading={urlBusy}
               onClick={() => void copyShareLink()}
@@ -134,9 +135,10 @@ export function ShareModal({
               label="Download JSON"
               variant="secondary"
               icon={<Icon icon={FileJson} size="sm" />}
+              width="100%"
               onClick={downloadJson}
             />
-          </HStack>
+          </Grid>
 
           {copyFeedback ? (
             <Text type="supporting" color="secondary">{copyFeedback}</Text>
