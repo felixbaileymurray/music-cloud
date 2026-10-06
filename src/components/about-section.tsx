@@ -13,7 +13,7 @@ export function AboutSection() {
 
   return (
     <>
-      <HStack gap={1} vAlign="center" width="100%">
+      <HStack gap={1} vAlign="center">
         <IconButton
           label="About"
           tooltip="About"

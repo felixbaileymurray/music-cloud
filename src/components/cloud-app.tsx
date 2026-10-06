@@ -22,7 +22,6 @@ import { Layout, LayoutContent, LayoutPanel } from "@astryxdesign/core/Layout";
 import { ProgressBar } from "@astryxdesign/core/ProgressBar";
 import { Slider } from "@astryxdesign/core/Slider";
 import { StackItem } from "@astryxdesign/core/Stack";
-import { StatusDot } from "@astryxdesign/core/StatusDot";
 import { Text } from "@astryxdesign/core/Text";
 import { VStack } from "@astryxdesign/core/VStack";
 import {
@@ -41,6 +40,10 @@ import {
   DEFAULT_CLOUD_PHYSICS,
   type CloudPhysics,
 } from "@/components/cover-cloud";
+import {
+  ResolveStatusMatchCounts,
+  ResolveStatusPopoverButton,
+} from "@/components/resolve-status-summary";
 import { SaveModal } from "@/components/save-modal";
 import { ShareModal } from "@/components/share-modal";
 import { UploadModal } from "@/components/upload-modal";
@@ -669,13 +672,9 @@ export function CloudApp() {
         : `${parsed.skippedRows} rows skipped (no album + artist)`
       : null;
 
-  const showResolveStatus =
-    progress.total > 0 &&
-    (phase === "resolve" || phase === "cloud" || phase === "empty-match");
-  const isResolving = phase === "resolve";
+  const showLookupSummary =
+    progress.total > 0 && (phase === "cloud" || phase === "empty-match");
   const cloudSizeMax = Math.max(1, resolved.length);
-
-  const emptyStatusCopy = "No snippets matched";
 
   return (
     <div
@@ -876,52 +875,15 @@ export function CloudApp() {
 
                   <StackItem size="fill" />
 
-                  <VStack gap={4} width="100%">
-                    {showResolveStatus ? (
-                      <VStack gap={2} width="100%">
-                        {phase === "empty-match" ? (
-                          <Text type="body" color="secondary">
-                            {emptyStatusCopy}
-                          </Text>
-                        ) : null}
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot
-                            variant="accent"
-                            label="Processed"
-                            isPulsing={isResolving}
-                          />
-                          <Text type="body" color="secondary">
-                            {progress.done}/{progress.total} processed
-                          </Text>
-                        </HStack>
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="success" label="Found" />
-                          <Text type="body" color="secondary">
-                            {progress.found} found
-                          </Text>
-                        </HStack>
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="error" label="Not found" />
-                          <Text type="body" color="secondary">
-                            {progress.dropped} not found
-                          </Text>
-                        </HStack>
-                        <HStack gap={2} align="center" width="100%">
-                          <StatusDot variant="neutral" label="Showing" />
-                          <Text type="body" color="secondary">
-                            {visible.length} showing
-                          </Text>
-                        </HStack>
-                        {skippedLabel ? (
-                          <Text type="supporting" color="secondary">
-                            {skippedLabel}
-                          </Text>
-                        ) : null}
-                      </VStack>
-                    ) : null}
-
+                  <HStack width="100%" justify="between" vAlign="center">
                     <AboutSection />
-                  </VStack>
+                    {showLookupSummary ? (
+                      <ResolveStatusPopoverButton
+                        progress={progress}
+                        skippedLabel={skippedLabel}
+                      />
+                    ) : null}
+                  </HStack>
               </VStack>
             </Card>
           </LayoutPanel>
@@ -1026,8 +988,12 @@ export function CloudApp() {
                     max={100}
                     hasValueLabel
                     formatValueLabel={() =>
-                      `${progress.done} / ${progress.total} · ${progress.found} found · ${progress.dropped} not found`
+                      `${progress.done} / ${progress.total}`
                     }
+                  />
+                  <ResolveStatusMatchCounts
+                    progress={progress}
+                    skippedLabel={skippedLabel}
                   />
                 </VStack>
               </div>
