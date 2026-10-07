@@ -20,7 +20,7 @@ import {
   CollageShell,
   useCollageLayoutState,
 } from "@/components/collage/collage-shell";
-import { ImageIntake } from "@/components/images/image-intake";
+import { CreateImagesFlow } from "@/components/images/create-images-flow";
 import { PaperBackground } from "@/components/images/paper-background";
 import {
   PaperLookPanel,
@@ -29,6 +29,7 @@ import {
 import { SaveModal } from "@/components/save-modal";
 import { UploadModal } from "@/components/upload-modal";
 import type { CollageItem } from "@/lib/collage-item";
+import type { ExampleStoredImage } from "@/lib/example-images";
 import { readImageAspectRatio } from "@/lib/image-aspect";
 import { snapshotPaperBackground } from "@/lib/paper-capture";
 import {
@@ -42,19 +43,28 @@ type Phase = "idle" | "cloud";
 
 type StoredImage = {
   id: string;
-  objectUrl: string;
+  /** Blob object URL or static `/examples/…` path. */
+  imageUrl: string;
   label: string;
   aspectRatio: number;
 };
 
+function revokeBlobUrls(urls: string[]) {
+  for (const url of urls) {
+    if (url.startsWith("blob:")) {
+      URL.revokeObjectURL(url);
+    }
+  }
+}
+
 async function filesToImages(files: File[]): Promise<StoredImage[]> {
   return Promise.all(
     files.map(async (file, index) => {
-      const objectUrl = URL.createObjectURL(file);
-      const aspectRatio = await readImageAspectRatio(objectUrl);
+      const imageUrl = URL.createObjectURL(file);
+      const aspectRatio = await readImageAspectRatio(imageUrl);
       return {
         id: `img-${file.name}-${file.size}-${file.lastModified}-${index}`,
-        objectUrl,
+        imageUrl,
         label: file.name || `Image ${index + 1}`,
         aspectRatio,
       };
@@ -70,6 +80,8 @@ export function ImagesCollage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [exportNeutral, setExportNeutral] = useState(false);
   const [createGate, setCreateGate] = useState<"warning" | "flow">("flow");
+  const [createModalTitle, setCreateModalTitle] = useState("Create a collage");
+  const [createFlowKey, setCreateFlowKey] = useState(0);
   const [lockedId, setLockedId] = useState<string | null>(null);
   const [exploreResetToken, setExploreResetToken] = useState(0);
   const [paperEnabled, setPaperEnabled] = useState(
@@ -87,7 +99,7 @@ export function ImagesCollage() {
   const objectUrlsRef = useRef<string[]>([]);
 
   const cloudSizeMax = Math.max(1, images.length);
-  const layout = useCollageLayoutState(cloudSizeMax, { initialSizeRatio: 1 });
+  const layout = useCollageLayoutState(cloudSizeMax);
 
   const visible = useMemo(
     () =>
@@ -102,7 +114,7 @@ export function ImagesCollage() {
     () =>
       visible.map((image) => ({
         id: image.id,
-        imageUrl: image.objectUrl,
+        imageUrl: image.imageUrl,
         label: image.label,
         weight: 1,
         aspectRatio: image.aspectRatio,
@@ -113,15 +125,9 @@ export function ImagesCollage() {
   const hasCloud = phase === "cloud";
   const palette = paletteById(paletteId);
 
-  function revokeObjectUrls(urls: string[]) {
-    for (const url of urls) {
-      URL.revokeObjectURL(url);
-    }
-  }
-
   function applyImages(next: StoredImage[]) {
-    revokeObjectUrls(objectUrlsRef.current);
-    objectUrlsRef.current = next.map((image) => image.objectUrl);
+    revokeBlobUrls(objectUrlsRef.current);
+    objectUrlsRef.current = next.map((image) => image.imageUrl);
     setImages(next);
     setLockedId(null);
     setExploreResetToken((token) => token + 1);
@@ -135,11 +141,13 @@ export function ImagesCollage() {
 
   useEffect(() => {
     return () => {
-      revokeObjectUrls(objectUrlsRef.current);
+      revokeBlobUrls(objectUrlsRef.current);
     };
   }, []);
 
   function openCreate() {
+    setCreateModalTitle("Create a collage");
+    setCreateFlowKey((key) => key + 1);
     if (hasCloud) {
       setCreateGate("warning");
     } else {
@@ -160,6 +168,19 @@ export function ImagesCollage() {
   async function onFilesSelected(files: File[]) {
     const next = await filesToImages(files);
     applyImages(next);
+    setUploadOpen(false);
+    setCreateGate("flow");
+  }
+
+  function onExampleReady(items: ExampleStoredImage[]) {
+    applyImages(
+      items.map((item) => ({
+        id: item.id,
+        imageUrl: item.imageUrl,
+        label: item.label,
+        aspectRatio: item.aspectRatio,
+      }))
+    );
     setUploadOpen(false);
     setCreateGate("flow");
   }
@@ -317,7 +338,9 @@ export function ImagesCollage() {
             dismissible
             onClose={closeUpload}
             title={
-              createGate === "warning" ? "Replace current collage?" : "Add images"
+              createGate === "warning"
+                ? "Replace current collage?"
+                : createModalTitle
             }
           >
             {createGate === "warning" ? (
@@ -347,7 +370,12 @@ export function ImagesCollage() {
                 </Grid>
               </VStack>
             ) : (
-              <ImageIntake onFilesSelected={onFilesSelected} />
+              <CreateImagesFlow
+                key={createFlowKey}
+                onTitleChange={setCreateModalTitle}
+                onFilesSelected={(files) => void onFilesSelected(files)}
+                onExampleReady={onExampleReady}
+              />
             )}
           </UploadModal>
           <UploadModal

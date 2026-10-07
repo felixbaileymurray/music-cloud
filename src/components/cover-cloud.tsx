@@ -151,6 +151,7 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
 
 export function CoverCloud({
   items,
+  // Keep in sync with collage-layout-constants (avoid import cycle with that module).
   sizeRatio = 4,
   zoom = 1,
   collisionPad = 10,
