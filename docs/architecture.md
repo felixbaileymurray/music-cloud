@@ -35,6 +35,10 @@ Shared, product-neutral collage UI:
 
 Features compose the shell with slots (empty state, create modal, right panel, canvas background, actions). Prefer a slot or callback over feature-specific fields on `CollageItem`. Intrinsic media data (e.g. `aspectRatio`) may live on the item.
 
+### Create journeys (not in the spine)
+
+Create flows stay **per feature**, not on the shared spine. Music and images share the chooser → manual / example shape today, but intakes and side effects already differ (Spotify + resolve vs local files + static assets) and will diverge further. Prefer a dedicated flow component per section (`create-cloud-flow.tsx`, `create-images-flow.tsx`) over a polymorphic spine create step.
+
 ## Music feature (`/music`)
 
 Orchestration: `src/components/music/music-collage.tsx`.
@@ -70,10 +74,14 @@ type ClipRef =
 
 Orchestration: `src/components/images/images-collage.tsx`.
 
-1. **Intake** — Local `image/*` files only; object URLs in the browser (no upload server).
-2. **Cloud** — Each file becomes a `CollageItem` with weight `1` and natural `aspectRatio` (even sizes until size ratio is raised).
-3. **Canvas look** — Flat background colour (Riso-style swatches) always; optional `@paper-design/shaders-react` `PaperTexture` on top. Right panel: Canvas (colour, texture toggle, seed/roughness/wrinkles/drops) and Items (spacing, frame width; frame colour matches canvas). Shadows are baked in presets (`paper-presets.ts`).
-4. **Save** — Primary action; JSON backup and URL share are not offered in this slice. Export snapshots the WebGL paper layer before `html-to-image` capture (`paper-capture.ts`).
+### Create → cloud
+
+1. **Chooser** — `CreateImagesFlow` (`create-images-flow.tsx`): **Create Manually** or **See an example** (same gate / replace-warning pattern as music).
+2. **Manual** — Local `image/*` files via `ImageIntake`; object URLs in the browser (no upload server).
+3. **Example** — Sample from `src/lib/example-images.ts` (bundled Unsplash architecture JPEGs under `public/examples/architecture/`). No resolve step.
+4. **Cloud** — Each image becomes a `CollageItem` with weight `1` and natural `aspectRatio` (even sizes until size ratio is raised).
+5. **Canvas look** — Flat background colour (Riso-style swatches) always; optional `@paper-design/shaders-react` `PaperTexture` on top. Right panel: Canvas (colour, texture toggle, seed/roughness/wrinkles/drops) and Items (spacing, frame width; frame colour matches canvas). Shadows are baked in presets (`paper-presets.ts`).
+6. **Save** — Primary action; JSON backup and URL share are not offered in this slice. Export snapshots the WebGL paper layer before `html-to-image` capture (`paper-capture.ts`).
 
 Hover and lock remain on the canvas; the right panel is global paper + item chrome styling, not per-image metadata.
 
