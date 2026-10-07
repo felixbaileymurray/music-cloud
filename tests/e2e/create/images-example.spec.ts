@@ -49,7 +49,13 @@ test.describe("images create via example", () => {
       .getByRole("button", { name: "Create" })
       .click();
 
-    await page.getByRole("button", { name: "Create Manually" }).click();
+    const manual = page.getByRole("button", { name: "Create Manually" });
+    await manual.scrollIntoViewIfNeeded();
+    // ClickableCard content can intercept Playwright's actionability click;
+    // mirror the music example helper and fire a DOM click.
+    await manual.evaluate((button) => {
+      (button as HTMLButtonElement).click();
+    });
 
     await expect(
       page.getByRole("button", { name: "Choose images" })
@@ -57,3 +63,4 @@ test.describe("images create via example", () => {
     await expect(page.getByRole("button", { name: "Back" })).toBeVisible();
   });
 });
+
