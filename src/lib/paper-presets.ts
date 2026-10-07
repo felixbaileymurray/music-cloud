@@ -8,6 +8,13 @@ export type PaperPalette = {
 
 export const PAPER_PALETTES: PaperPalette[] = [
   {
+    id: "white",
+    label: "White",
+    colorPaper: "#ffffff",
+    colorShadow: "#cccccc",
+    colorBack: "#f0f0f0",
+  },
+  {
     id: "warm-white",
     label: "Warm white",
     colorPaper: "#f5f0e6",
@@ -37,18 +44,41 @@ export const PAPER_PALETTES: PaperPalette[] = [
   },
 ];
 
-/** Fixed quiet paper texture — not exposed in the UI. */
+/** Default values for paper texture knobs exposed in the canvas sidebar. */
+export const PAPER_TEXTURE_DEFAULTS: {
+  enabled: boolean;
+  blending: number;
+  seed: number;
+  roughness: number;
+  wrinkles: number;
+  drops: number;
+} = {
+  enabled: true,
+  blending: 0.5,
+  seed: 190,
+  roughness: 0.33,
+  wrinkles: 0.3,
+  drops: 0.3,
+};
+
+/** Fixed paper texture params — not exposed in the UI. */
 export const PAPER_TEXTURE_FIXED = {
-  blending: 0,
   distortion: 0,
   angle: 300,
-  seed: 4,
   fiber: 0.15,
   fiberSize: 0.5,
   folds: 0,
-  wrinkles: 0,
   crumples: 0,
-  drops: 0,
   scale: 1,
   fit: "cover" as const,
+  roughnessSize: 0.45,
+  roughnessRows: 0,
+};
+
+export type PaperTextureControls = {
+  blending: number;
+  seed: number;
+  roughness: number;
+  wrinkles: number;
+  drops: number;
 };
