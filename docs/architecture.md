@@ -29,11 +29,11 @@ Entry: `/` redirects to `/music` (query preserved). `/music` renders `MusicColla
 
 Shared, product-neutral collage UI:
 
-- **`src/lib/collage-item.ts`** — `CollageItem` (`id`, `imageUrl`, `label`, `weight`).
+- **`src/lib/collage-item.ts`** — `CollageItem` (`id`, `imageUrl`, `label`, `weight`, optional `aspectRatio`).
 - **`src/components/collage/collage-shell.tsx`** — Layout, customise knobs, canvas slot, save wiring hooks.
-- **`src/components/cover-cloud.tsx`** — Force layout and hover/lock visuals on `CollageItem`s.
+- **`src/components/cover-cloud.tsx`** — Force layout and hover/lock visuals on `CollageItem`s. Nodes keep area ≈ square sizing; collide radius stays `r + pad` (unchanged from square covers).
 
-Features compose the shell with slots (empty state, create modal, right panel, canvas background, actions). New behaviour should be a slot or callback, not a field on `CollageItem`.
+Features compose the shell with slots (empty state, create modal, right panel, canvas background, actions). Prefer a slot or callback over feature-specific fields on `CollageItem`. Intrinsic media data (e.g. `aspectRatio`) may live on the item.
 
 ## Music feature (`/music`)
 
@@ -71,11 +71,11 @@ type ClipRef =
 Orchestration: `src/components/images/images-collage.tsx`.
 
 1. **Intake** — Local `image/*` files only; object URLs in the browser (no upload server).
-2. **Cloud** — Each file becomes a `CollageItem` with weight `1` (even sizes until size ratio is raised).
-3. **Canvas look** — Flat background colour (Riso-style swatches) always; optional `@paper-design/shaders-react` `PaperTexture` on top. Right panel: Canvas (colour, texture toggle, seed/roughness/wrinkles/drops) and Frame (width; colour matches canvas). Shadows are baked in presets (`paper-presets.ts`).
+2. **Cloud** — Each file becomes a `CollageItem` with weight `1` and natural `aspectRatio` (even sizes until size ratio is raised).
+3. **Canvas look** — Flat background colour (Riso-style swatches) always; optional `@paper-design/shaders-react` `PaperTexture` on top. Right panel: Canvas (colour, texture toggle, seed/roughness/wrinkles/drops) and Items (spacing, frame width; frame colour matches canvas). Shadows are baked in presets (`paper-presets.ts`).
 4. **Save** — Primary action; JSON backup and URL share are not offered in this slice. Export snapshots the WebGL paper layer before `html-to-image` capture (`paper-capture.ts`).
 
-Hover and lock remain on the canvas; the right panel is global paper styling, not per-image metadata.
+Hover and lock remain on the canvas; the right panel is global paper + item chrome styling, not per-image metadata.
 
 ## API map
 

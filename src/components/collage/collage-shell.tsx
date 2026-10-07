@@ -151,6 +151,8 @@ export function CollageShell({
   sidebarActions,
   rightPanel,
   rightPanelToggleIcon,
+  /** When true, spacing + frame leave Dev Controls (shown in the feature right panel). */
+  promoteVisualLayoutKnobs = false,
   canvasOverlay,
   canvasBackground,
   canvasColor,
@@ -172,13 +174,14 @@ export function CollageShell({
   sidebarActions: ReactNode;
   rightPanel: ReactNode;
   rightPanelToggleIcon: LucideIcon;
+  promoteVisualLayoutKnobs?: boolean;
   /** Status banners, empty states, resolve UI — rendered inside .spa-canvas */
   canvasOverlay: ReactNode;
-  /** Behind the cloud (e.g. paper texture). */
+  /** Behind the collage (e.g. paper texture). */
   canvasBackground?: ReactNode;
   /** Flat canvas / cover-frame colour (images paper look). */
   canvasColor?: string;
-  /** Over the cloud stage (e.g. audio unlock). */
+  /** Over the collage stage (e.g. audio unlock). */
   stageOverlay?: ReactNode;
   visibleItems: CollageItem[];
   lockedId: string | null;
@@ -234,8 +237,8 @@ export function CollageShell({
                     <VStack gap={3} width="100%">
                       <Heading level={3}>Customise</Heading>
                       <CollageKnob
-                        label="Cloud size"
-                        hint="How many covers are shown. Defaults to 50 when more are available."
+                        label="Size"
+                        hint="How many items are shown. Defaults to 50 when more are available."
                         display={`${Math.min(layout.cloudSize, layout.cloudSizeMax)}`}
                         min={1}
                         max={layout.cloudSizeMax}
@@ -245,7 +248,7 @@ export function CollageShell({
                       />
                       <CollageKnob
                         label="Size ratio"
-                        hint="How much larger the biggest cover is than the smallest."
+                        hint="How much larger the biggest item is than the smallest."
                         display={`${layout.sizeRatio.toFixed(1)}×`}
                         min={MIN_SIZE_RATIO}
                         max={MAX_SIZE_RATIO}
@@ -255,7 +258,7 @@ export function CollageShell({
                       />
                       <CollageKnob
                         label="Zoom"
-                        hint="Scales the whole cloud relative to the canvas. Zoom out for breathing room on large clouds."
+                        hint="Scales the collage on the canvas. Zoom out for more breathing room."
                         display={`${Math.round(layout.zoom * 100)}%`}
                         min={MIN_ZOOM}
                         max={MAX_ZOOM}
@@ -271,29 +274,33 @@ export function CollageShell({
                         defaultIsOpen={false}
                       >
                         <VStack gap={3} width="100%" paddingBlockStart={3}>
-                          <CollageKnob
-                            label="Collision pad"
-                            hint="Extra gap kept between covers to reduce overlap."
-                            display={`${layout.collisionPad}px`}
-                            min={0}
-                            max={24}
-                            step={1}
-                            value={layout.collisionPad}
-                            onChange={layout.setCollisionPad}
-                          />
-                          <CollageKnob
-                            label="Frame width"
-                            hint="Border thickness around each cover. Visual only — does not affect physics."
-                            display={`${layout.coverFrame}px`}
-                            min={0}
-                            max={8}
-                            step={1}
-                            value={layout.coverFrame}
-                            onChange={layout.setCoverFrame}
-                          />
+                          {!promoteVisualLayoutKnobs ? (
+                            <>
+                              <CollageKnob
+                                label="Spacing"
+                                hint="Extra gap between items."
+                                display={`${layout.collisionPad}px`}
+                                min={0}
+                                max={24}
+                                step={1}
+                                value={layout.collisionPad}
+                                onChange={layout.setCollisionPad}
+                              />
+                              <CollageKnob
+                                label="Frame"
+                                hint="Border thickness around each item. Visual only."
+                                display={`${layout.coverFrame}px`}
+                                min={0}
+                                max={8}
+                                step={1}
+                                value={layout.coverFrame}
+                                onChange={layout.setCoverFrame}
+                              />
+                            </>
+                          ) : null}
                           <CollageKnob
                             label="Centre pull"
-                            hint="How strongly every cover is pulled toward the middle of the stage."
+                            hint="How strongly every item is pulled toward the middle of the stage."
                             display={layout.physics.centerStrengthBase.toFixed(3)}
                             min={0}
                             max={0.12}
@@ -303,7 +310,7 @@ export function CollageShell({
                           />
                           <CollageKnob
                             label="Mass pull"
-                            hint="Extra centre pull for larger covers, so heavier albums sit more centrally."
+                            hint="Extra centre pull for larger items, so heavier ones sit more centrally."
                             display={layout.physics.centerStrengthMass.toFixed(3)}
                             min={0}
                             max={0.4}
@@ -313,7 +320,7 @@ export function CollageShell({
                           />
                           <CollageKnob
                             label="Charge"
-                            hint="How strongly covers push each other apart. More negative = more repulsion."
+                            hint="How strongly items push each other apart. More negative = more repulsion."
                             display={layout.physics.chargeStrength.toFixed(0)}
                             min={-40}
                             max={0}
@@ -323,7 +330,7 @@ export function CollageShell({
                           />
                           <CollageKnob
                             label="Settle speed"
-                            hint="How quickly the simulation cools and the cloud stops drifting."
+                            hint="How quickly the simulation cools and items stop drifting."
                             display={layout.physics.alphaDecay.toFixed(3)}
                             min={0.005}
                             max={0.1}
@@ -343,7 +350,7 @@ export function CollageShell({
                           />
                           <CollageKnob
                             label="Collide strength"
-                            hint="How firmly overlapping covers are shoved apart on each collide pass."
+                            hint="How firmly overlapping items are shoved apart on each collide pass."
                             display={layout.physics.collideStrength.toFixed(2)}
                             min={0}
                             max={1}
@@ -353,7 +360,7 @@ export function CollageShell({
                           />
                           <CollageKnob
                             label="Hover reheat"
-                            hint="How strongly neighbours reflow when a cover swells on hover — not audio or scale speed."
+                            hint="How strongly neighbours reflow when an item swells on hover."
                             display={layout.physics.hoverReheat.toFixed(2)}
                             min={0.05}
                             max={0.5}
@@ -363,7 +370,7 @@ export function CollageShell({
                           />
                           <CollageKnob
                             label="Boundary"
-                            hint="How firmly covers are nudged back inside the padded stage edges."
+                            hint="How firmly items are nudged back inside the padded stage edges."
                             display={layout.physics.boundaryStrength.toFixed(2)}
                             min={0}
                             max={1.5}

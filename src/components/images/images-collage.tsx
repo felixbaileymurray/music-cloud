@@ -29,6 +29,7 @@ import {
 import { SaveModal } from "@/components/save-modal";
 import { UploadModal } from "@/components/upload-modal";
 import type { CollageItem } from "@/lib/collage-item";
+import { readImageAspectRatio } from "@/lib/image-aspect";
 import { snapshotPaperBackground } from "@/lib/paper-capture";
 import {
   PAPER_TEXTURE_DEFAULTS,
@@ -43,14 +44,22 @@ type StoredImage = {
   id: string;
   objectUrl: string;
   label: string;
+  aspectRatio: number;
 };
 
-function filesToImages(files: File[]): StoredImage[] {
-  return files.map((file, index) => ({
-    id: `img-${file.name}-${file.size}-${file.lastModified}-${index}`,
-    objectUrl: URL.createObjectURL(file),
-    label: file.name || `Image ${index + 1}`,
-  }));
+async function filesToImages(files: File[]): Promise<StoredImage[]> {
+  return Promise.all(
+    files.map(async (file, index) => {
+      const objectUrl = URL.createObjectURL(file);
+      const aspectRatio = await readImageAspectRatio(objectUrl);
+      return {
+        id: `img-${file.name}-${file.size}-${file.lastModified}-${index}`,
+        objectUrl,
+        label: file.name || `Image ${index + 1}`,
+        aspectRatio,
+      };
+    })
+  );
 }
 
 export function ImagesCollage() {
@@ -96,6 +105,7 @@ export function ImagesCollage() {
         imageUrl: image.objectUrl,
         label: image.label,
         weight: 1,
+        aspectRatio: image.aspectRatio,
       })),
     [visible]
   );
@@ -147,8 +157,9 @@ export function ImagesCollage() {
     setCreateGate("flow");
   }
 
-  function onFilesSelected(files: File[]) {
-    applyImages(filesToImages(files));
+  async function onFilesSelected(files: File[]) {
+    const next = await filesToImages(files);
+    applyImages(next);
     setUploadOpen(false);
     setCreateGate("flow");
   }
@@ -221,6 +232,7 @@ export function ImagesCollage() {
       modeSwitch={<CollageModeSwitch />}
       hasCloud={hasCloud}
       showCustomise={phase === "cloud"}
+      promoteVisualLayoutKnobs
       sidebarActions={
         <VStack gap={2} width="100%">
           <Button
@@ -258,6 +270,8 @@ export function ImagesCollage() {
           onControlsChange={(next) =>
             setPaperControls((current) => ({ ...current, ...next }))
           }
+          overlap={layout.collisionPad}
+          onOverlapChange={layout.setCollisionPad}
           frame={layout.coverFrame}
           onFrameChange={layout.setCoverFrame}
         />

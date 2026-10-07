@@ -21,6 +21,8 @@ export function PaperLookPanel({
   onPaletteIdChange,
   controls,
   onControlsChange,
+  overlap,
+  onOverlapChange,
   frame,
   onFrameChange,
 }: {
@@ -30,6 +32,8 @@ export function PaperLookPanel({
   onPaletteIdChange: (id: string) => void;
   controls: PaperTextureControls;
   onControlsChange: (next: Partial<PaperTextureControls>) => void;
+  overlap: number;
+  onOverlapChange: (value: number) => void;
   frame: number;
   onFrameChange: (value: number) => void;
 }) {
@@ -140,9 +144,19 @@ export function PaperLookPanel({
       </VStack>
 
       <VStack gap={3} width="100%">
-        <Heading level={3}>Frame</Heading>
+        <Heading level={3}>Items</Heading>
         <CollageKnob
-          label="Width"
+          label="Spacing"
+          hint="Extra gap between items."
+          display={`${overlap}px`}
+          min={0}
+          max={24}
+          step={1}
+          value={overlap}
+          onChange={onOverlapChange}
+        />
+        <CollageKnob
+          label="Frame width"
           hint="Border thickness around each photo. Visual only — does not affect spacing."
           display={`${frame}px`}
           min={0}
