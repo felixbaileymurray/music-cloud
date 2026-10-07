@@ -4,4 +4,9 @@ export type CollageItem = {
   imageUrl: string;
   label: string;
   weight: number;
+  /**
+   * Width ÷ height. Defaults to 1 (square) when omitted — music covers stay
+   * square; uploaded photos carry their natural ratio.
+   */
+  aspectRatio?: number;
 };

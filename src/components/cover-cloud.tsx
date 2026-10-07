@@ -22,7 +22,9 @@ import type { CollageItem } from "@/lib/collage-item";
 import "@/components/spa.css";
 
 type CloudNode = CollageItem & {
+  /** Half the geometric mean of the node’s sides (size scale from weight). */
   r: number;
+  aspectRatio: number;
   x: number;
   y: number;
   vx?: number;
@@ -31,8 +33,21 @@ type CloudNode = CollageItem & {
 
 const SWELL = 1.18;
 const MIN_RADIUS = 22;
-/** Keep covers inset from the stage so the cloud never kisses the frame. */
+/** Keep items inset from the stage so the collage never kisses the frame. */
 const BOUNDARY_INSET = 40;
+
+/** Keep area ≈ (2r)² so weight sizing matches square covers when aspect is 1. */
+export function nodeHalfExtents(r: number, aspectRatio: number) {
+  const a = aspectRatio > 0 ? aspectRatio : 1;
+  const halfH = r / Math.sqrt(a);
+  const halfW = a * halfH;
+  return { halfW, halfH };
+}
+
+function collideRadiusFor(r: number, aspectRatio: number, swell: number, pad: number) {
+  const { halfW, halfH } = nodeHalfExtents(r * swell, aspectRatio);
+  return Math.hypot(halfW, halfH) + pad;
+}
 
 export type CloudPhysics = {
   centerStrengthBase: number;
@@ -79,7 +94,7 @@ function massNorm(r: number, minR: number, maxR: number) {
   return (r - minR) / (maxR - minR);
 }
 
-/** Soft wall: nudge covers that would spill past the padded stage edges. */
+/** Soft wall: nudge items that would spill past the padded stage edges. */
 function forceBounds(
   width: number,
   height: number,
@@ -90,11 +105,13 @@ function forceBounds(
   const force = (alpha: number) => {
     for (const node of nodes) {
       const swell = getSwellId() === node.id ? SWELL : 1;
-      const r = node.r * swell + BOUNDARY_INSET;
-      const minX = r;
-      const maxX = Math.max(r, width - r);
-      const minY = r;
-      const maxY = Math.max(r, height - r);
+      const { halfW, halfH } = nodeHalfExtents(node.r * swell, node.aspectRatio);
+      const padX = halfW + BOUNDARY_INSET;
+      const padY = halfH + BOUNDARY_INSET;
+      const minX = padX;
+      const maxX = Math.max(padX, width - padX);
+      const minY = padY;
+      const maxY = Math.max(padY, height - padY);
 
       if (node.x < minX) {
         node.vx = (node.vx ?? 0) + (minX - node.x) * boundaryStrength * alpha;
@@ -122,11 +139,13 @@ function clampNodeToBounds(
   hoveredId: string | null
 ) {
   const swell = hoveredId === node.id ? SWELL : 1;
-  const r = node.r * swell + BOUNDARY_INSET;
-  const maxX = Math.max(r, width - r);
-  const maxY = Math.max(r, height - r);
-  node.x = Math.max(r, Math.min(maxX, node.x ?? r));
-  node.y = Math.max(r, Math.min(maxY, node.y ?? r));
+  const { halfW, halfH } = nodeHalfExtents(node.r * swell, node.aspectRatio);
+  const padX = halfW + BOUNDARY_INSET;
+  const padY = halfH + BOUNDARY_INSET;
+  const maxX = Math.max(padX, width - padX);
+  const maxY = Math.max(padY, height - padY);
+  node.x = Math.max(padX, Math.min(maxX, node.x ?? padX));
+  node.y = Math.max(padY, Math.min(maxY, node.y ?? padY));
 }
 
 function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
@@ -151,7 +170,7 @@ export function CoverCloud({
 }: {
   items: CollageItem[];
   sizeRatio?: number;
-  /** Scales all covers vs the canvas. 1 = current default. Lower = more breathing room. */
+  /** Scales all items vs the canvas. 1 = current default. Lower = more breathing room. */
   zoom?: number;
   collisionPad?: number;
   physics?: CloudPhysics;
@@ -182,6 +201,10 @@ export function CoverCloud({
     const maxWeight = Math.max(...weights);
     return items.map((item) => ({
       ...item,
+      aspectRatio:
+        typeof item.aspectRatio === "number" && item.aspectRatio > 0
+          ? item.aspectRatio
+          : 1,
       r: radiusFor(item.weight, minWeight, maxWeight, sizeRatio, zoom),
       x: size.width / 2,
       y: size.height / 2,
@@ -252,7 +275,7 @@ export function CoverCloud({
         forceCollide<CloudNode>()
           .radius((node) => {
             const swell = hoverIdRef.current === node.id ? SWELL : 1;
-            return node.r * swell + pad;
+            return collideRadiusFor(node.r, node.aspectRatio, swell, pad);
           })
           .strength(collideStrength)
           .iterations(collideIterations)
@@ -287,7 +310,12 @@ export function CoverCloud({
       | undefined;
     collide?.radius((node) => {
       const swell = hoverIdRef.current === node.id ? SWELL : 1;
-      return node.r * swell + collisionPadRef.current;
+      return collideRadiusFor(
+        node.r,
+        node.aspectRatio,
+        swell,
+        collisionPadRef.current
+      );
     });
     const alpha = Math.max(simulation.alpha(), hoverReheatRef.current);
     simulation.alpha(alpha).restart();
@@ -343,7 +371,8 @@ export function CoverCloud({
           !neutralVisuals &&
           (hoveredId !== null || lockedId !== null) &&
           !emphasized;
-        const displayR = node.r * (isHovered || isLocked ? SWELL : 1);
+        const swell = isHovered || isLocked ? SWELL : 1;
+        const { halfW, halfH } = nodeHalfExtents(node.r * swell, node.aspectRatio);
         return (
           <button
             key={node.id}
@@ -380,10 +409,10 @@ export function CoverCloud({
             }}
             className="cover-cloud__node"
             style={{
-              left: (node.x ?? 0) - displayR,
-              top: (node.y ?? 0) - displayR,
-              width: displayR * 2,
-              height: displayR * 2,
+              left: (node.x ?? 0) - halfW,
+              top: (node.y ?? 0) - halfH,
+              width: halfW * 2,
+              height: halfH * 2,
               opacity: dimmed ? 0.22 : 1,
               zIndex:
                 isHovered || isLocked
