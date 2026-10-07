@@ -23,6 +23,7 @@ import { BrandWordmark } from "@/components/brand-wordmark";
 import { CollageKnob } from "@/components/collage/collage-knob";
 import {
   DEFAULT_CLOUD_PHYSICS,
+  DEFAULT_CLOUD_SIZE,
   DEFAULT_COLLISION_PAD,
   DEFAULT_COVER_FRAME,
   DEFAULT_SIZE_RATIO,
@@ -64,13 +65,10 @@ export type CollageLayoutState = {
 };
 
 export function useCollageLayoutState(
-  cloudSizeMax: number,
-  options?: { initialSizeRatio?: number }
+  cloudSizeMax: number
 ): CollageLayoutState {
-  const [cloudSize, setCloudSize] = useState(50);
-  const [sizeRatio, setSizeRatio] = useState(
-    options?.initialSizeRatio ?? DEFAULT_SIZE_RATIO
-  );
+  const [cloudSize, setCloudSize] = useState(DEFAULT_CLOUD_SIZE);
+  const [sizeRatio, setSizeRatio] = useState(DEFAULT_SIZE_RATIO);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [collisionPad, setCollisionPad] = useState(DEFAULT_COLLISION_PAD);
   const [coverFrame, setCoverFrame] = useState(DEFAULT_COVER_FRAME);

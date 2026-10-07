@@ -99,7 +99,7 @@ export function ImagesCollage() {
   const objectUrlsRef = useRef<string[]>([]);
 
   const cloudSizeMax = Math.max(1, images.length);
-  const layout = useCollageLayoutState(cloudSizeMax, { initialSizeRatio: 1 });
+  const layout = useCollageLayoutState(cloudSizeMax);
 
   const visible = useMemo(
     () =>
