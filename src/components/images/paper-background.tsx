@@ -31,16 +31,15 @@ export function PaperBackground({
       className="spa-paper-bg"
       aria-hidden="true"
       data-paper-enabled={enabled ? "true" : "false"}
-      data-palette={palette.id}
+      style={{ background: palette.colorPaper }}
     >
       {enabled ? (
         <PaperTexture
           width="100%"
           height="100%"
-          colorBack={palette.colorBack}
+          colorBack={palette.colorPaper}
           colorPaper={palette.colorPaper}
           colorShadow={palette.colorShadow}
-          blending={controls.blending}
           seed={controls.seed}
           roughness={controls.roughness}
           wrinkles={controls.wrinkles}

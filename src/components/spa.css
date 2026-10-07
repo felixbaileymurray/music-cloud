@@ -54,27 +54,7 @@
   z-index: 0;
   overflow: hidden;
   border-radius: inherit;
-  background: var(--spa-paper-flat, var(--color-background-body));
-}
-
-.spa-paper-bg[data-palette="white"] {
-  --spa-paper-flat: #ffffff;
-}
-
-.spa-paper-bg[data-palette="warm-white"] {
-  --spa-paper-flat: #f5f0e6;
-}
-
-.spa-paper-bg[data-palette="cream"] {
-  --spa-paper-flat: #faf6e8;
-}
-
-.spa-paper-bg[data-palette="cool-grey"] {
-  --spa-paper-flat: #eceef0;
-}
-
-.spa-paper-bg[data-palette="ink"] {
-  --spa-paper-flat: #2a2a2e;
+  background: var(--spa-canvas-color, var(--color-background-body));
 }
 
 .spa-paper-bg canvas {
@@ -83,7 +63,7 @@
   height: 100% !important;
 }
 
-/* Colour swatches in the canvas customisation sidebar. */
+/* Solid colour swatches in the canvas customisation sidebar. */
 .spa-paper-swatch {
   box-sizing: border-box;
   flex: 0 0 auto;
@@ -93,12 +73,7 @@
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-element);
   cursor: pointer;
-  background:
-    linear-gradient(
-      135deg,
-      var(--spa-swatch-paper) 55%,
-      var(--spa-swatch-shadow) 55%
-    );
+  background: var(--color-background-body);
 }
 
 .spa-paper-swatch:hover {
@@ -114,31 +89,6 @@
   border-color: var(--color-border-emphasized);
   box-shadow: 0 0 0 var(--spacing-0-5) var(--color-background-surface),
     0 0 0 var(--spacing-1) var(--color-border-emphasized);
-}
-
-.spa-paper-swatch[data-palette="white"] {
-  --spa-swatch-paper: #ffffff;
-  --spa-swatch-shadow: #cccccc;
-}
-
-.spa-paper-swatch[data-palette="warm-white"] {
-  --spa-swatch-paper: #f5f0e6;
-  --spa-swatch-shadow: #c9b89a;
-}
-
-.spa-paper-swatch[data-palette="cream"] {
-  --spa-swatch-paper: #faf6e8;
-  --spa-swatch-shadow: #d4c9a8;
-}
-
-.spa-paper-swatch[data-palette="cool-grey"] {
-  --spa-swatch-paper: #eceef0;
-  --spa-swatch-shadow: #a8adb4;
-}
-
-.spa-paper-swatch[data-palette="ink"] {
-  --spa-swatch-paper: #2a2a2e;
-  --spa-swatch-shadow: #0d0d10;
 }
 
 .spa-cloud-stage {
@@ -214,8 +164,9 @@
   overflow: visible;
   border: none;
   border-radius: var(--radius-none);
-  background: var(--color-background-body);
-  box-shadow: 0 0 0 var(--cover-frame) var(--color-background-body);
+  background: var(--spa-canvas-color, var(--color-background-body));
+  box-shadow: 0 0 0 var(--cover-frame)
+    var(--spa-canvas-color, var(--color-background-body));
   cursor: pointer;
 }
 

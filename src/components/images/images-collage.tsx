@@ -68,7 +68,6 @@ export function ImagesCollage() {
   );
   const [paletteId, setPaletteId] = useState("white");
   const [paperControls, setPaperControls] = useState<PaperTextureControls>({
-    blending: PAPER_TEXTURE_DEFAULTS.blending,
     seed: PAPER_TEXTURE_DEFAULTS.seed,
     roughness: PAPER_TEXTURE_DEFAULTS.roughness,
     wrinkles: PAPER_TEXTURE_DEFAULTS.wrinkles,
@@ -259,10 +258,13 @@ export function ImagesCollage() {
           onControlsChange={(next) =>
             setPaperControls((current) => ({ ...current, ...next }))
           }
+          frame={layout.coverFrame}
+          onFrameChange={layout.setCoverFrame}
         />
       }
       rightPanelToggleIcon={Images}
       canvasOverlay={canvasOverlay}
+      canvasColor={hasCloud ? palette.colorPaper : undefined}
       canvasBackground={
         hasCloud ? (
           <PaperBackground

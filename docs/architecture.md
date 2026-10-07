@@ -72,7 +72,7 @@ Orchestration: `src/components/images/images-collage.tsx`.
 
 1. **Intake** — Local `image/*` files only; object URLs in the browser (no upload server).
 2. **Cloud** — Each file becomes a `CollageItem` with weight `1` (even sizes until size ratio is raised).
-3. **Canvas look** — `@paper-design/shaders-react` `PaperTexture` as background; on/off toggle, curated colour swatches, and knobs (blending, seed, roughness, wrinkles, drops) in the right panel (`paper-presets.ts`).
+3. **Canvas look** — Flat background colour (Riso-style swatches) always; optional `@paper-design/shaders-react` `PaperTexture` on top. Right panel: Canvas (colour, texture toggle, seed/roughness/wrinkles/drops) and Frame (width; colour matches canvas). Shadows are baked in presets (`paper-presets.ts`).
 4. **Save** — Primary action; JSON backup and URL share are not offered in this slice. Export snapshots the WebGL paper layer before `html-to-image` capture (`paper-capture.ts`).
 
 Hover and lock remain on the canvas; the right panel is global paper styling, not per-image metadata.
