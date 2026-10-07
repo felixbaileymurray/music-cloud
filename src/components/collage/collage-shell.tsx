@@ -151,7 +151,7 @@ export function CollageShell({
   sidebarActions,
   rightPanel,
   rightPanelToggleIcon,
-  /** When true, overlap + frame leave Dev Controls (shown in the feature right panel). */
+  /** When true, spacing + frame leave Dev Controls (shown in the feature right panel). */
   promoteVisualLayoutKnobs = false,
   canvasOverlay,
   canvasBackground,
@@ -273,8 +273,8 @@ export function CollageShell({
                           {!promoteVisualLayoutKnobs ? (
                             <>
                               <CollageKnob
-                                label="Overlap"
-                                hint="Extra gap between items to reduce overlap."
+                                label="Spacing"
+                                hint="Extra gap between items."
                                 display={`${layout.collisionPad}px`}
                                 min={0}
                                 max={24}

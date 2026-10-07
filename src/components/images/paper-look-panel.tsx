@@ -65,7 +65,7 @@ export function PaperLookPanel({
       <VStack gap={3} width="100%">
         <Heading level={4}>Items</Heading>
         <CollageKnob
-          label="Overlap"
+          label="Spacing"
           hint="Extra gap between items."
           display={`${overlap}px`}
           min={0}
