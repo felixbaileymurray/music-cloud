@@ -21,8 +21,10 @@ Title style: imperative, specific (see recent merges into `dev`).
 ## Local checks
 
 - Follow [setup.md](setup.md).
-- Run `npm run lint` and `npm run build` when the change warrants it.
+- Run `npm run astryx:check`, `npm run lint`, and `npm run build` when the change warrants it.
 - After theme source edits, run `npm run theme:check` (or `theme:build`).
+
+Pull requests to `dev` run [Astryx CI and advisory review](astryx-ci.md) on GitHub. Configure `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` on the repo for advisory PR comments.
 
 ## UI
 
