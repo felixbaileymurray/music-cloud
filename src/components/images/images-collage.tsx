@@ -30,6 +30,10 @@ import { SaveModal } from "@/components/save-modal";
 import { UploadModal } from "@/components/upload-modal";
 import type { CollageItem } from "@/lib/collage-item";
 import { snapshotPaperBackground } from "@/lib/paper-capture";
+import {
+  PAPER_TEXTURE_DEFAULTS,
+  type PaperTextureControls,
+} from "@/lib/paper-presets";
 import { defaultCloudSize } from "@/lib/share-payload";
 import type { SaveResolutionPreset } from "@/lib/save-image";
 
@@ -59,8 +63,17 @@ export function ImagesCollage() {
   const [createGate, setCreateGate] = useState<"warning" | "flow">("flow");
   const [lockedId, setLockedId] = useState<string | null>(null);
   const [exploreResetToken, setExploreResetToken] = useState(0);
-  const [paletteId, setPaletteId] = useState("warm-white");
-  const [roughness, setRoughness] = useState(0.35);
+  const [paperEnabled, setPaperEnabled] = useState(
+    PAPER_TEXTURE_DEFAULTS.enabled
+  );
+  const [paletteId, setPaletteId] = useState("white");
+  const [paperControls, setPaperControls] = useState<PaperTextureControls>({
+    blending: PAPER_TEXTURE_DEFAULTS.blending,
+    seed: PAPER_TEXTURE_DEFAULTS.seed,
+    roughness: PAPER_TEXTURE_DEFAULTS.roughness,
+    wrinkles: PAPER_TEXTURE_DEFAULTS.wrinkles,
+    drops: PAPER_TEXTURE_DEFAULTS.drops,
+  });
   const cloudFrameRef = useRef<HTMLDivElement | null>(null);
   const paperRootRef = useRef<HTMLDivElement | null>(null);
   const objectUrlsRef = useRef<string[]>([]);
@@ -238,10 +251,14 @@ export function ImagesCollage() {
       }
       rightPanel={
         <PaperLookPanel
+          enabled={paperEnabled}
+          onEnabledChange={setPaperEnabled}
           paletteId={paletteId}
           onPaletteIdChange={setPaletteId}
-          roughness={roughness}
-          onRoughnessChange={setRoughness}
+          controls={paperControls}
+          onControlsChange={(next) =>
+            setPaperControls((current) => ({ ...current, ...next }))
+          }
         />
       }
       rightPanelToggleIcon={Images}
@@ -250,7 +267,8 @@ export function ImagesCollage() {
         hasCloud ? (
           <PaperBackground
             palette={palette}
-            roughness={roughness}
+            enabled={paperEnabled}
+            controls={paperControls}
             rootRef={paperRootRef}
           />
         ) : null
