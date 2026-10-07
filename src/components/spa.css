@@ -63,24 +63,6 @@
   height: 100% !important;
 }
 
-/* Canvas background colour — icon-only ToggleButtons filled with the stock. */
-.spa-paper-colour-toggle {
-  border-color: var(--color-border);
-}
-
-.spa-paper-colour-toggle[data-is-pressed="true"] {
-  border-color: var(--color-border-emphasized);
-  box-shadow: 0 0 0 var(--spacing-0-5) var(--color-background-surface),
-    0 0 0 var(--spacing-1) var(--color-border-emphasized);
-}
-
-/* Invisible icon sized so icon-only toggles keep a square hit target. */
-.spa-paper-swatch-chip {
-  display: block;
-  width: var(--spacing-5);
-  height: var(--spacing-5);
-}
-
 .spa-cloud-stage {
   position: relative;
   z-index: 1;

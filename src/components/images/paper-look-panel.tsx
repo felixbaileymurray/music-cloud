@@ -40,10 +40,10 @@ export function PaperLookPanel({
 
         <VStack gap={6} width="100%">
           <VStack gap={2} width="100%">
-            <Heading level={4}>Background colour</Heading>
+            <Heading level={4}>Colour</Heading>
             <ToggleButtonGroup
               type="single"
-              label="Background colour"
+              label="Colour"
               size="sm"
               value={paletteId}
               onChange={(value) => {
@@ -56,67 +56,85 @@ export function PaperLookPanel({
                   value={palette.id}
                   label={palette.label}
                   isIconOnly
-                  className="spa-paper-colour-toggle"
-                  style={{ backgroundColor: palette.colorPaper }}
+                  style={{
+                    backgroundColor: palette.colorPaper,
+                    borderWidth: "var(--border-width)",
+                    borderStyle: "solid",
+                    borderColor: "var(--color-border)",
+                  }}
                   icon={
-                    <span className="spa-paper-swatch-chip" aria-hidden />
+                    <span
+                      style={{
+                        display: "block",
+                        width: "var(--spacing-5)",
+                        height: "var(--spacing-5)",
+                      }}
+                      aria-hidden
+                    />
                   }
                 />
               ))}
             </ToggleButtonGroup>
           </VStack>
 
-          <VStack gap={4} width="100%">
-            <Switch
-              label="Paper texture"
-              value={enabled}
-              onChange={onEnabledChange}
-              labelPosition="start"
-              labelSpacing="spread"
-              width="100%"
-              size="sm"
-            />
+          <VStack gap={2} width="100%">
+            <Heading level={4}>Texture</Heading>
+            <VStack gap={4} width="100%">
+              <Switch
+                label="Paper texture"
+                value={enabled}
+                onChange={onEnabledChange}
+                labelPosition="start"
+                labelSpacing="spread"
+                width="100%"
+                size="sm"
+              />
 
-            <CollageKnob
-              label="Seed"
-              hint="Shifts every pattern so the grain layout changes."
-              display={String(Math.round(controls.seed))}
-              min={0}
-              max={1000}
-              step={1}
-              value={controls.seed}
-              onChange={(seed) => onControlsChange({ seed })}
-            />
-            <CollageKnob
-              label="Roughness"
-              hint="Fine paper grain across the canvas."
-              display={controls.roughness.toFixed(2)}
-              min={0}
-              max={1}
-              step={0.01}
-              value={controls.roughness}
-              onChange={(roughness) => onControlsChange({ roughness })}
-            />
-            <CollageKnob
-              label="Wrinkles"
-              hint="Faceted creases repeating across the surface."
-              display={controls.wrinkles.toFixed(2)}
-              min={0}
-              max={1}
-              step={0.01}
-              value={controls.wrinkles}
-              onChange={(wrinkles) => onControlsChange({ wrinkles })}
-            />
-            <CollageKnob
-              label="Drops"
-              hint="Speckle pattern that darkens the paper."
-              display={controls.drops.toFixed(2)}
-              min={0}
-              max={1}
-              step={0.01}
-              value={controls.drops}
-              onChange={(drops) => onControlsChange({ drops })}
-            />
+              {enabled ? (
+                <>
+                  <CollageKnob
+                    label="Seed"
+                    hint="Shifts every pattern so the grain layout changes."
+                    display={String(Math.round(controls.seed))}
+                    min={0}
+                    max={1000}
+                    step={1}
+                    value={controls.seed}
+                    onChange={(seed) => onControlsChange({ seed })}
+                  />
+                  <CollageKnob
+                    label="Roughness"
+                    hint="Fine paper grain across the canvas."
+                    display={controls.roughness.toFixed(2)}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={controls.roughness}
+                    onChange={(roughness) => onControlsChange({ roughness })}
+                  />
+                  <CollageKnob
+                    label="Wrinkles"
+                    hint="Faceted creases repeating across the surface."
+                    display={controls.wrinkles.toFixed(2)}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={controls.wrinkles}
+                    onChange={(wrinkles) => onControlsChange({ wrinkles })}
+                  />
+                  <CollageKnob
+                    label="Drops"
+                    hint="Speckle pattern that darkens the paper."
+                    display={controls.drops.toFixed(2)}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={controls.drops}
+                    onChange={(drops) => onControlsChange({ drops })}
+                  />
+                </>
+              ) : null}
+            </VStack>
           </VStack>
         </VStack>
       </VStack>
