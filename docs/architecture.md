@@ -31,7 +31,7 @@ Shared, product-neutral collage UI:
 
 - **`src/lib/collage-item.ts`** — `CollageItem` (`id`, `imageUrl`, `label`, `weight`, optional `aspectRatio`).
 - **`src/components/collage/collage-shell.tsx`** — Layout, customise knobs, canvas slot, save wiring hooks.
-- **`src/components/cover-cloud.tsx`** — Force layout and hover/lock visuals on `CollageItem`s. Nodes keep area ≈ square sizing; collision uses the circumradius of each rect.
+- **`src/components/cover-cloud.tsx`** — Force layout and hover/lock visuals on `CollageItem`s. Nodes keep area ≈ square sizing; collide radius stays `r + pad` (unchanged from square covers).
 
 Features compose the shell with slots (empty state, create modal, right panel, canvas background, actions). Prefer a slot or callback over feature-specific fields on `CollageItem`. Intrinsic media data (e.g. `aspectRatio`) may live on the item.
 

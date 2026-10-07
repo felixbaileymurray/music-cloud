@@ -44,11 +44,6 @@ export function nodeHalfExtents(r: number, aspectRatio: number) {
   return { halfW, halfH };
 }
 
-function collideRadiusFor(r: number, aspectRatio: number, swell: number, pad: number) {
-  const { halfW, halfH } = nodeHalfExtents(r * swell, aspectRatio);
-  return Math.hypot(halfW, halfH) + pad;
-}
-
 export type CloudPhysics = {
   centerStrengthBase: number;
   centerStrengthMass: number;
@@ -275,7 +270,8 @@ export function CoverCloud({
         forceCollide<CloudNode>()
           .radius((node) => {
             const swell = hoverIdRef.current === node.id ? SWELL : 1;
-            return collideRadiusFor(node.r, node.aspectRatio, swell, pad);
+            // Same as pre-aspect: pad applies to size scale `r`, not rect circumradius.
+            return node.r * swell + pad;
           })
           .strength(collideStrength)
           .iterations(collideIterations)
@@ -310,12 +306,7 @@ export function CoverCloud({
       | undefined;
     collide?.radius((node) => {
       const swell = hoverIdRef.current === node.id ? SWELL : 1;
-      return collideRadiusFor(
-        node.r,
-        node.aspectRatio,
-        swell,
-        collisionPadRef.current
-      );
+      return node.r * swell + collisionPadRef.current;
     });
     const alpha = Math.max(simulation.alpha(), hoverReheatRef.current);
     simulation.alpha(alpha).restart();
