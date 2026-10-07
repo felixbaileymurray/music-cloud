@@ -54,6 +54,7 @@
   z-index: 0;
   overflow: hidden;
   border-radius: inherit;
+  background: var(--spa-canvas-color, var(--color-background-body));
 }
 
 .spa-paper-bg canvas {
@@ -135,8 +136,9 @@
   overflow: visible;
   border: none;
   border-radius: var(--radius-none);
-  background: var(--color-background-body);
-  box-shadow: 0 0 0 var(--cover-frame) var(--color-background-body);
+  background: var(--spa-canvas-color, var(--color-background-body));
+  box-shadow: 0 0 0 var(--cover-frame)
+    var(--spa-canvas-color, var(--color-background-body));
   cursor: pointer;
 }
 

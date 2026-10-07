@@ -155,6 +155,7 @@ export function CollageShell({
   promoteVisualLayoutKnobs = false,
   canvasOverlay,
   canvasBackground,
+  canvasColor,
   stageOverlay,
   visibleItems,
   lockedId,
@@ -178,6 +179,8 @@ export function CollageShell({
   canvasOverlay: ReactNode;
   /** Behind the collage (e.g. paper texture). */
   canvasBackground?: ReactNode;
+  /** Flat canvas / cover-frame colour (images paper look). */
+  canvasColor?: string;
   /** Over the collage stage (e.g. audio unlock). */
   stageOverlay?: ReactNode;
   visibleItems: CollageItem[];
@@ -208,6 +211,7 @@ export function CollageShell({
       style={
         {
           "--cover-frame": `${layout.coverFrame}px`,
+          ...(canvasColor ? { "--spa-canvas-color": canvasColor } : null),
         } as CSSProperties
       }
     >
