@@ -13,18 +13,26 @@ export function PaperLookPanel({
   onPaletteIdChange,
   roughness,
   onRoughnessChange,
+  overlap,
+  onOverlapChange,
+  frame,
+  onFrameChange,
 }: {
   paletteId: string;
   onPaletteIdChange: (id: string) => void;
   roughness: number;
   onRoughnessChange: (value: number) => void;
+  overlap: number;
+  onOverlapChange: (value: number) => void;
+  frame: number;
+  onFrameChange: (value: number) => void;
 }) {
   return (
     <VStack gap={4} width="100%">
       <VStack gap={2} width="100%">
         <Heading level={3}>Canvas</Heading>
         <Text type="body" color="secondary">
-          Paper colour and grain behind your photos. Covers stay sharp on top.
+          Paper colour and grain behind your photos.
         </Text>
       </VStack>
 
@@ -53,6 +61,30 @@ export function PaperLookPanel({
         value={roughness}
         onChange={onRoughnessChange}
       />
+
+      <VStack gap={3} width="100%">
+        <Heading level={4}>Items</Heading>
+        <CollageKnob
+          label="Spacing"
+          hint="Extra gap between items."
+          display={`${overlap}px`}
+          min={0}
+          max={24}
+          step={1}
+          value={overlap}
+          onChange={onOverlapChange}
+        />
+        <CollageKnob
+          label="Frame"
+          hint="Border thickness around each item."
+          display={`${frame}px`}
+          min={0}
+          max={8}
+          step={1}
+          value={frame}
+          onChange={onFrameChange}
+        />
+      </VStack>
     </VStack>
   );
 }
