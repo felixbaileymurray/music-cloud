@@ -63,32 +63,22 @@
   height: 100% !important;
 }
 
-/* Solid colour swatches in the canvas customisation sidebar. */
-.spa-paper-swatch {
-  box-sizing: border-box;
-  flex: 0 0 auto;
-  width: var(--spacing-8);
-  height: var(--spacing-8);
-  padding: 0;
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-element);
-  cursor: pointer;
-  background: var(--color-background-body);
+/* Canvas background colour — icon-only ToggleButtons filled with the stock. */
+.spa-paper-colour-toggle {
+  border-color: var(--color-border);
 }
 
-.spa-paper-swatch:hover {
-  border-color: var(--color-border-emphasized);
-}
-
-.spa-paper-swatch:focus-visible {
-  outline: var(--border-width) solid var(--color-border-blue);
-  outline-offset: var(--spacing-0-5);
-}
-
-.spa-paper-swatch--selected {
+.spa-paper-colour-toggle[data-is-pressed="true"] {
   border-color: var(--color-border-emphasized);
   box-shadow: 0 0 0 var(--spacing-0-5) var(--color-background-surface),
     0 0 0 var(--spacing-1) var(--color-border-emphasized);
+}
+
+/* Invisible icon sized so icon-only toggles keep a square hit target. */
+.spa-paper-swatch-chip {
+  display: block;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
 }
 
 .spa-cloud-stage {

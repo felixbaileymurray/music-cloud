@@ -1,8 +1,11 @@
 "use client";
 
 import { Heading } from "@astryxdesign/core/Heading";
-import { HStack } from "@astryxdesign/core/HStack";
 import { Switch } from "@astryxdesign/core/Switch";
+import {
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@astryxdesign/core/ToggleButton";
 import { VStack } from "@astryxdesign/core/VStack";
 import { CollageKnob } from "@/components/collage/collage-knob";
 import {
@@ -38,27 +41,29 @@ export function PaperLookPanel({
         <VStack gap={6} width="100%">
           <VStack gap={2} width="100%">
             <Heading level={4}>Background colour</Heading>
-            <HStack gap={2} width="100%" wrap="wrap" vAlign="start">
-              {PAPER_PALETTES.map((palette) => {
-                const selected = paletteId === palette.id;
-                return (
-                  <button
-                    key={palette.id}
-                    type="button"
-                    className={
-                      selected
-                        ? "spa-paper-swatch spa-paper-swatch--selected"
-                        : "spa-paper-swatch"
-                    }
-                    style={{ background: palette.colorPaper }}
-                    aria-label={palette.label}
-                    aria-pressed={selected}
-                    title={palette.label}
-                    onClick={() => onPaletteIdChange(palette.id)}
-                  />
-                );
-              })}
-            </HStack>
+            <ToggleButtonGroup
+              type="single"
+              label="Background colour"
+              size="sm"
+              value={paletteId}
+              onChange={(value) => {
+                if (value != null) onPaletteIdChange(value);
+              }}
+            >
+              {PAPER_PALETTES.map((palette) => (
+                <ToggleButton
+                  key={palette.id}
+                  value={palette.id}
+                  label={palette.label}
+                  isIconOnly
+                  className="spa-paper-colour-toggle"
+                  style={{ backgroundColor: palette.colorPaper }}
+                  icon={
+                    <span className="spa-paper-swatch-chip" aria-hidden />
+                  }
+                />
+              ))}
+            </ToggleButtonGroup>
           </VStack>
 
           <VStack gap={4} width="100%">
