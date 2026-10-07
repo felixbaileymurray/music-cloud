@@ -50,6 +50,8 @@ Production example: `https://bricola.art/api/spotify/callback` (also allowlisted
 | `npm run build` | Production build |
 | `npm start` | Serve production build on the same host/port |
 | `npm run lint` | ESLint |
+| `npm run astryx:check` | `astryx doctor` + theme artifact check |
+| `npm run lint:astryx-interim` | Interim Astryx ESLint warnings (CI gate) |
 | `npm run theme:build` | Build `src/theme/bricola.css` from `bricolaTheme.ts` |
 | `npm run theme:check` | Check theme artifacts are up to date |
 
