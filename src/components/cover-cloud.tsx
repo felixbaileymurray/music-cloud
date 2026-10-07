@@ -18,22 +18,10 @@ import {
   useState,
   type Ref,
 } from "react";
-import type { CloudHit, CloudKind } from "@/lib/types";
-import {
-  cloudNodeId,
-  cloudNodeLabel,
-  hoverPreviewFromHit,
-  type HoverPreview,
-} from "@/lib/cloud-node";
-import {
-  playSnippet,
-  prefetchSnippet,
-  stopSnippet,
-} from "@/lib/snippet-player";
+import type { CollageItem } from "@/lib/collage-item";
 import "@/components/spa.css";
 
-type CloudNode = CloudHit & {
-  id: string;
+type CloudNode = CollageItem & {
   r: number;
   x: number;
   y: number;
@@ -67,19 +55,6 @@ export const DEFAULT_CLOUD_PHYSICS: CloudPhysics = {
   hoverReheat: 0.2,
   boundaryStrength: 1,
 };
-
-/**
- * Prefer listen counts when they vary. Otherwise fall back to list rank so
- * datasets without play counts still get a continuous size hierarchy.
- */
-function sizeWeights(items: CloudHit[]): number[] {
-  const counts = items.map((item) => item.listenCount);
-  const minCount = Math.min(...counts);
-  const maxCount = Math.max(...counts);
-  if (maxCount > minCount) return counts;
-  const n = items.length;
-  return items.map((_, index) => n - index);
-}
 
 function radiusFor(
   weight: number,
@@ -161,9 +136,7 @@ function assignRef<T>(ref: Ref<T> | undefined, value: T | null) {
 }
 
 export function CoverCloud({
-  cloudKind,
   items,
-  audioUnlocked,
   sizeRatio = 4,
   zoom = 1,
   collisionPad = 10,
@@ -175,11 +148,8 @@ export function CoverCloud({
   frameRef: frameRefProp,
   onHoverChange,
   onLockToggle,
-  onPreviewChange,
 }: {
-  cloudKind: CloudKind;
-  items: CloudHit[];
-  audioUnlocked: boolean;
+  items: CollageItem[];
   sizeRatio?: number;
   /** Scales all covers vs the canvas. 1 = current default. Lower = more breathing room. */
   zoom?: number;
@@ -189,47 +159,34 @@ export function CoverCloud({
   exploreResetToken?: number;
   neutralVisuals?: boolean;
   frameRef?: Ref<HTMLDivElement | null>;
-  onHoverChange?: (hit: CloudHit | null) => void;
-  onLockToggle?: (hit: CloudHit) => void;
-  onPreviewChange?: (preview: HoverPreview | null) => void;
+  onHoverChange?: (item: CollageItem | null) => void;
+  onLockToggle?: (item: CollageItem) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const simRef = useRef<Simulation<CloudNode, undefined> | null>(null);
-  const cycleRef = useRef<Map<string, number>>(new Map());
   const hoverIdRef = useRef<string | null>(null);
   const lockedIdRef = useRef(lockedId);
-  const playingIdRef = useRef<string | null>(null);
-  const onPreviewChangeRef = useRef(onPreviewChange);
   const collisionPadRef = useRef(collisionPad);
   const hoverReheatRef = useRef(physics.hoverReheat);
   const [nodes, setNodes] = useState<CloudNode[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
 
-  // Keep pad proportional to cover size so zoom-out doesn't inflate gaps.
   collisionPadRef.current = collisionPad * Math.max(0.1, zoom);
   hoverReheatRef.current = physics.hoverReheat;
-  onPreviewChangeRef.current = onPreviewChange;
-
-  useEffect(() => {
-    if (!neutralVisuals) return;
-    hoverIdRef.current = null;
-    void stopSnippet();
-  }, [neutralVisuals]);
 
   const sized = useMemo(() => {
     if (items.length === 0) return [];
-    const weights = sizeWeights(items);
+    const weights = items.map((item) => item.weight);
     const minWeight = Math.min(...weights);
     const maxWeight = Math.max(...weights);
-    return items.map((item, index) => ({
+    return items.map((item) => ({
       ...item,
-      id: cloudNodeId(cloudKind, item),
-      r: radiusFor(weights[index], minWeight, maxWeight, sizeRatio, zoom),
+      r: radiusFor(item.weight, minWeight, maxWeight, sizeRatio, zoom),
       x: size.width / 2,
       y: size.height / 2,
     }));
-  }, [cloudKind, items, size.height, size.width, sizeRatio, zoom]);
+  }, [items, size.height, size.width, sizeRatio, zoom]);
 
   useEffect(() => {
     const frame = frameRef.current;
@@ -264,7 +221,6 @@ export function CoverCloud({
     const maxR = radii.length ? Math.max(...radii) : MIN_RADIUS;
     const stage = Math.min(size.width, size.height);
 
-    // Seed by mass: heavy covers near the centre, lighter ones further out.
     const seeded: CloudNode[] = sized.map((node, index) => {
       const angle = (index / Math.max(sized.length, 1)) * Math.PI * 2;
       const mass = massNorm(node.r, minR, maxR);
@@ -339,65 +295,14 @@ export function CoverCloud({
 
   useEffect(() => {
     lockedIdRef.current = lockedId;
-    // Unlocking while not hovering the playing cover should stop the cycle.
-    if (
-      !lockedId &&
-      playingIdRef.current &&
-      hoverIdRef.current !== playingIdRef.current
-    ) {
-      playingIdRef.current = null;
-      onPreviewChangeRef.current?.(null);
-      void stopSnippet();
-    }
   }, [lockedId]);
-
-  useEffect(() => {
-    return () => {
-      playingIdRef.current = null;
-      void stopSnippet();
-    };
-  }, []);
 
   useEffect(() => {
     if (exploreResetToken === 0) return;
     setHoveredId(null);
-    playingIdRef.current = null;
+    hoverIdRef.current = null;
     onHoverChange?.(null);
-    onPreviewChange?.(null);
-    void stopSnippet();
-  }, [exploreResetToken, onHoverChange, onPreviewChange]);
-
-  function stillFocused(nodeId: string) {
-    return (
-      hoverIdRef.current === nodeId || lockedIdRef.current === nodeId
-    );
-  }
-
-  function playNextClip(node: CloudNode) {
-    if (!audioUnlocked || node.clips.length === 0) {
-      playingIdRef.current = null;
-      onPreviewChange?.(null);
-      return;
-    }
-
-    const next = cycleRef.current.get(node.id) ?? 0;
-    const clip = node.clips[next % node.clips.length];
-    cycleRef.current.set(node.id, next + 1);
-    playingIdRef.current = node.id;
-    onPreviewChange?.(hoverPreviewFromHit(cloudKind, node, clip));
-    for (const other of node.clips) {
-      void prefetchSnippet(other);
-    }
-    void playSnippet(clip, {
-      onEnded: () => {
-        if (!stillFocused(node.id)) {
-          playingIdRef.current = null;
-          return;
-        }
-        playNextClip(node);
-      },
-    });
-  }
+  }, [exploreResetToken, onHoverChange]);
 
   function beginHover(node: CloudNode) {
     if (lockedIdRef.current && lockedIdRef.current !== node.id) return;
@@ -405,17 +310,11 @@ export function CoverCloud({
     hoverIdRef.current = node.id;
     setHoveredId(node.id);
     onHoverChange?.(node);
-
-    // Locked (or still playing after re-enter): keep the current snippet cycle.
-    if (playingIdRef.current === node.id) return;
-
-    playNextClip(node);
   }
 
   function endHover(node: CloudNode) {
     if (hoverIdRef.current !== node.id) return;
 
-    // Lock keeps swell/focus and lets snippets keep cycling off-cover.
     if (lockedIdRef.current === node.id) {
       hoverIdRef.current = null;
       setHoveredId(null);
@@ -425,10 +324,7 @@ export function CoverCloud({
 
     hoverIdRef.current = null;
     setHoveredId(null);
-    playingIdRef.current = null;
     onHoverChange?.(null);
-    onPreviewChange?.(null);
-    void stopSnippet();
   }
 
   return (
@@ -447,13 +343,12 @@ export function CoverCloud({
           !neutralVisuals &&
           (hoveredId !== null || lockedId !== null) &&
           !emphasized;
-        // Keep swell while locked so leaving the cover doesn't "hover away".
         const displayR = node.r * (isHovered || isLocked ? SWELL : 1);
         return (
           <button
             key={node.id}
             type="button"
-            aria-label={cloudNodeLabel(cloudKind, node)}
+            aria-label={node.label}
             aria-pressed={isLocked}
             onPointerEnter={(event) => {
               if (neutralVisuals || event.pointerType === "touch") return;
@@ -472,7 +367,6 @@ export function CoverCloud({
               if (hoveredId === node.id) {
                 endHover(node);
               } else {
-                if (hoveredId) void stopSnippet();
                 beginHover(node);
               }
             }}
@@ -500,7 +394,7 @@ export function CoverCloud({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt=""
-              src={node.coverUrl}
+              src={node.imageUrl}
               crossOrigin="anonymous"
               draggable={false}
               className="cover-cloud__img"

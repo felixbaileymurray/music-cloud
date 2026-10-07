@@ -26,22 +26,26 @@ import {
   shareDocumentToJson,
   type ShareDocumentV1,
 } from "@/lib/share-payload";
-import type { CloudKind } from "@/lib/types";
+import type { SaveFeatureLabel } from "@/lib/save-image";
 
 export function SaveModal({
   open,
-  cloudKind,
+  featureLabel,
   document: shareDoc,
+  showJsonBackup = true,
   getCloudFrame,
   prepareNeutralCapture,
   onClose,
 }: {
   open: boolean;
-  cloudKind: CloudKind;
+  featureLabel: SaveFeatureLabel;
   document: ShareDocumentV1 | null;
+  showJsonBackup?: boolean;
   getCloudFrame: () => HTMLElement | null;
   /** Clears hover / lock visuals, waits a paint, returns a restore fn. */
-  prepareNeutralCapture: () => Promise<() => void>;
+  prepareNeutralCapture: (
+    resolution?: SaveResolutionPreset
+  ) => Promise<() => void>;
   onClose: () => void;
 }) {
   const [format, setFormat] = useState<SaveImageFormat>("png");
@@ -55,7 +59,7 @@ export function SaveModal({
     setError(null);
     let restore: (() => void) | null = null;
     try {
-      restore = await prepareNeutralCapture();
+      restore = await prepareNeutralCapture(resolution);
       const frame = getCloudFrame();
       if (!frame) {
         throw new Error("The collage canvas is not ready to export.");
@@ -64,7 +68,7 @@ export function SaveModal({
         format,
         resolution,
       });
-      downloadBlob(blob, saveImageFileName(cloudKind, format));
+      downloadBlob(blob, saveImageFileName(featureLabel, format));
     } catch (err) {
       setError(
         err instanceof Error
@@ -83,7 +87,7 @@ export function SaveModal({
     const blob = new Blob([shareDocumentToJson(shareDoc)], {
       type: "application/json",
     });
-    downloadBlob(blob, saveJsonFileName(cloudKind));
+    downloadBlob(blob, saveJsonFileName(featureLabel));
   }
 
   const listenCount = shareDoc?.listens.length ?? 0;
@@ -156,22 +160,24 @@ export function SaveModal({
           />
         </VStack>
 
-        <VStack gap={3} width="100%">
-          <Heading level={3}>File Backup</Heading>
-          <Text type="body" color="secondary">
-            {shareDoc
-              ? `Save a list containing data about the ${listenCount} items currently shown in the collage. You can re-upload the file later to create another collage.`
-              : "Create a cloud first to save a JSON backup."}
-          </Text>
-          <Button
-            label="Download JSON"
-            variant="secondary"
-            icon={<Icon icon={FileJson} size="sm" />}
-            width="100%"
-            isDisabled={!shareDoc || busy}
-            onClick={downloadJson}
-          />
-        </VStack>
+        {showJsonBackup ? (
+          <VStack gap={3} width="100%">
+            <Heading level={3}>File Backup</Heading>
+            <Text type="body" color="secondary">
+              {shareDoc
+                ? `Save a list containing data about the ${listenCount} items currently shown in the collage. You can re-upload the file later to create another collage.`
+                : "Create a cloud first to save a JSON backup."}
+            </Text>
+            <Button
+              label="Download JSON"
+              variant="secondary"
+              icon={<Icon icon={FileJson} size="sm" />}
+              width="100%"
+              isDisabled={!shareDoc || busy}
+              onClick={downloadJson}
+            />
+          </VStack>
+        ) : null}
 
         {error ? (
           <Banner status="error" title={error} collapsible={false} />

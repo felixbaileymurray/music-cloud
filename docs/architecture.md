@@ -15,23 +15,39 @@ Single Next.js App Router app. Not a monorepo. Package name on npm/GitHub is `mu
 ## Source layout
 
 ```text
-src/app/           Routes, layout, API handlers
-src/components/    CloudApp shell, canvas, create/share/save UI
-src/lib/           Resolve, parse, share, Spotify, caches, types
-src/theme/         Bricola Astryx theme source + built CSS
+src/app/              Routes (`/music`, `/images`), layout, API handlers
+src/components/collage/  Vanilla collage shell + shared knobs
+src/components/music/    Music feature (`music-collage.tsx`)
+src/components/images/   Images feature (`images-collage.tsx`)
+src/lib/                Resolve, parse, share, Spotify, caches, types
+src/theme/              Bricola Astryx theme source + built CSS
 ```
 
-Entry: `src/app/page.tsx` renders `CloudApp` (`src/components/cloud-app.tsx`).
+Entry: `/` redirects to `/music` (query preserved). `/music` renders `MusicCollage`; `/images` renders `ImagesCollage`.
 
-## Create → resolve → cloud
+## Collage spine
+
+Shared, product-neutral collage UI:
+
+- **`src/lib/collage-item.ts`** — `CollageItem` (`id`, `imageUrl`, `label`, `weight`).
+- **`src/components/collage/collage-shell.tsx`** — Layout, customise knobs, canvas slot, save wiring hooks.
+- **`src/components/cover-cloud.tsx`** — Force layout and hover/lock visuals on `CollageItem`s.
+
+Features compose the shell with slots (empty state, create modal, right panel, canvas background, actions). New behaviour should be a slot or callback, not a field on `CollageItem`.
+
+## Music feature (`/music`)
+
+Orchestration: `src/components/music/music-collage.tsx`.
+
+### Create → resolve → cloud
 
 1. **Intake** — Create flow (`create-cloud-flow.tsx`) yields album listens, track listens, or Spotify track rows. Manual files go through `parse-history.ts` (CSV, Spotify JSON, share JSON, simple `Title - Artist` lines).
 2. **Resolve** — Client posts each row to preview APIs. Server tries Deezer, then iTunes. Results that fail the audio probe return as misses.
 3. **Hits** — Matched rows become `PreviewHit` (album) or `TrackHit` (track) with `ClipRef`s and cover URL.
-4. **Cloud** — Hits feed the force layout. Status counts track processed / found / not found / showing.
-5. **Play** — Hover (or lock) drives `snippet-player.ts`. Deezer clips refresh via `/api/clip?deezer=` because CDN URLs expire.
+4. **Cloud** — Hits map to `CollageItem`s (`src/lib/music-collage-items.ts`) and feed the force layout.
+5. **Play** — Hover (or lock) drives `snippet-player.ts` via `use-music-cloud-audio.ts`. Deezer clips refresh via `/api/clip?deezer=` because CDN URLs expire.
 
-Invariant: **no playable preview → no cover in the cloud.**
+Invariant (music only): **no playable preview → no cover in the cloud.**
 
 ### Resolve modules
 
@@ -49,6 +65,17 @@ type ClipRef =
   | { kind: "deezer"; trackId: number }  // stable id; URL refreshed on play
   | { kind: "itunes"; url: string };
 ```
+
+## Images feature (`/images`)
+
+Orchestration: `src/components/images/images-collage.tsx`.
+
+1. **Intake** — Local `image/*` files only; object URLs in the browser (no upload server).
+2. **Cloud** — Each file becomes a `CollageItem` with weight `1` (even sizes until size ratio is raised).
+3. **Canvas look** — `@paper-design/shaders-react` `PaperTexture` as background; curated palettes + grain in the right panel (`paper-presets.ts`).
+4. **Save** — Primary action; JSON backup and URL share are not offered in this slice. Export snapshots the WebGL paper layer before `html-to-image` capture (`paper-capture.ts`).
+
+Hover and lock remain on the canvas; the right panel is global paper styling, not per-image metadata.
 
 ## API map
 
@@ -87,34 +114,24 @@ There is **no** server database of listening data.
 |-------|---------|
 | IndexedDB `collage-preview-cache` | Album preview resolve cache |
 | IndexedDB `collage-track-preview-cache` | Track preview resolve cache |
-| URL hash `#cl1=…` | Compressed share document |
-| Downloaded JSON | Share / save snapshot (`ShareDocumentV1`) |
+| URL hash `#cl1=…` | Compressed share document (music) |
+| Downloaded JSON | Share / save snapshot (`ShareDocumentV1`, music) |
 
 `APP_ID` is `collage`. Derive DB names from helpers in `src/lib/app-id.ts`. Do not hardcode the string in call sites. Product rename does **not** change `app-id.ts`. See [`.cursor/rules/brand.mdc`](../.cursor/rules/brand.mdc).
 
 ## Share and save
 
-**Share** (`share-payload.ts`, `share-modal.tsx`):
+**Share** (music — `share-payload.ts`, `share-modal.tsx`):
 
 - Build a flat `ShareDocumentV1` from **visible** cloud items only.
 - Link: deflate + base64url after prefix `cl1=` (`SHARE_HASH_PREFIX`).
 - Link allowed when visible count ≤ 50 and encoded length ≤ 8000 characters after the prefix.
 - Otherwise download JSON. Import again through Create → manual upload. Recipient re-resolves audio.
 
-Mental model: share = export flat list and send. Open share = create from imported list.
-
 **Save** (`save-modal.tsx`, `save-image.ts`):
 
 - Image: PNG / JPEG / WebP at 1× / 2× / 3×; canvas frame only; neutral (no hover dim / lock chrome).
-- JSON: same visible-item document shape as share.
-
-## UI shell (mental map)
-
-- **Canvas** — covers, physics, zoom, audio unlock overlay.
-- **Sidebar** — Create / Share / Save, status dots, customise (cloud size, size ratio, zoom), development physics controls, detail panel on hover/lock.
-- **Modals** — create flow, share, save, overwrite warnings.
-
-Large orchestration lives in `cloud-app.tsx`. Prefer that file for wiring; prefer `src/lib/*` for domain logic.
+- JSON backup: same visible-item document shape as share (music only).
 
 ## What not to reinvent here
 
