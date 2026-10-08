@@ -26,7 +26,16 @@ Full `npm run lint` (Next.js + TypeScript rules) is still recommended locally; t
 
 ## Advisory reviews (Layer 3)
 
-Two **non-blocking** workflows run when a PR to `dev` is opened or updated (including the first push after **Ready for review**). Each posts its **own** PR comment and job summary. Draft PRs are skipped.
+Two **non-blocking** workflows run **once per PR** when it becomes reviewable — not on every push (to limit LLM cost). Each posts its **own** PR comment and job summary.
+
+| Event | Behavior |
+|-------|----------|
+| **Draft PR** | No review while `draft: true` |
+| **Mark ready for review** | Runs when the PR leaves draft (`ready_for_review`) |
+| **Open PR (not draft)** | Runs on `opened` |
+| **Later commits** | No automatic re-review |
+
+To refresh after large changes: Actions → **Code review (advisory)** or **Astryx advisory review** → **Run workflow**, enter the PR number, enable **force** to replace the existing comment.
 
 | Review | Workflow | Scope |
 |--------|----------|--------|

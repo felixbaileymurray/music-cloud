@@ -14,6 +14,7 @@ import {
   env,
   gitDiff,
   isOnlyLowSignalChanges,
+  prCommentWithMarkerExists,
   readRepoContext,
   upsertPrComment,
 } from "./lib/pr-advisory-common.mjs";
@@ -36,6 +37,19 @@ async function runReview() {
   const prNumber = env("PR_NUMBER");
   const base = env("BASE_SHA") ?? env("BASE_REF") ?? "origin/dev";
   const head = env("HEAD_SHA") ?? env("HEAD_REF") ?? "HEAD";
+
+  if (
+    !dryRun &&
+    repo &&
+    prNumber &&
+    env("FORCE_REVIEW") !== "true" &&
+    (await prCommentWithMarkerExists(repo, prNumber, MARKER))
+  ) {
+    console.log(
+      "Code review comment already exists for this PR; skipping (use workflow re-run with force, or FORCE_REVIEW=true).",
+    );
+    return;
+  }
 
   const files = changedFileList(base, head);
   if (isOnlyLowSignalChanges(files)) {

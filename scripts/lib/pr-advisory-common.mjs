@@ -66,6 +66,14 @@ export async function githubRequest(url, { method = "GET", body } = {}) {
   return res.json();
 }
 
+export async function prCommentWithMarkerExists(repo, prNumber, marker) {
+  const listUrl = `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`;
+  const comments = await githubRequest(listUrl);
+  return comments.some(
+    (c) => typeof c.body === "string" && c.body.includes(marker),
+  );
+}
+
 export async function upsertPrComment(repo, prNumber, body, marker) {
   const fullBody = `${marker}\n${body}`;
   const listUrl = `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`;
