@@ -1,6 +1,8 @@
-# Astryx CI and advisory review
+# Astryx CI
 
-GitHub Actions enforce Astryx **setup and theme artifacts** on pull requests to `dev`. A separate workflow posts an **advisory** design-system review on PRs that touch UI code.
+GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **design-system advisory review** on pull requests to `dev`.
+
+General **code review** (bugs, security, maintainability) is a separate portable pack: [`docs/code-review-ci.md`](code-review-ci.md) and [`scripts/code-review/`](../scripts/code-review/).
 
 ## Required checks (Layer 1)
 
@@ -24,65 +26,22 @@ npm run lint
 
 Full `npm run lint` (Next.js + TypeScript rules) is still recommended locally; the GitHub job does not gate on it until existing lint debt is cleared.
 
-## Advisory reviews (Layer 3)
-
-Two **non-blocking** workflows run **once per PR** when it becomes reviewable — not on every push (to limit LLM cost). Each posts its **own** PR comment and job summary.
-
-| Event | Behavior |
-|-------|----------|
-| **Draft PR** | No review while `draft: true` |
-| **Mark ready for review** | Runs when the PR leaves draft (`ready_for_review`) |
-| **Open PR (not draft)** | Runs on `opened` |
-| **Later commits** | No automatic re-review |
-
-To refresh after large changes: Actions → **Code review (advisory)** or **Astryx advisory review** → **Run workflow**, enter the PR number, enable **force** to replace the existing comment.
-
-| Review | Workflow | Scope |
-|--------|----------|--------|
-| **General code** | [`.github/workflows/code-review-advisory.yml`](../.github/workflows/code-review-advisory.yml) | Whole PR diff (bugs, security, perf, maintainability) |
-| **Astryx design system** | [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml) | UI paths + Astryx CLI docs |
-
-Implementation is **provider-agnostic** (Anthropic Messages API or OpenAI Chat Completions), not `anthropics/claude-code-action`. The general review prompt is aligned with Claude Code’s `/code-review` intent; swap models via secrets and `CODE_REVIEW_MODEL` without changing workflows.
-
-### General code review
-
-Script: [`scripts/code-review-advisory.mjs`](../scripts/code-review-advisory.mjs). Marker: `code-review-advisory:v1`.
-
-Does **not** duplicate Astryx feedback (design-system comments are left to the Astryx job).
-
-### Astryx design-system review
+## Astryx advisory review
 
 Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml)
 
-On PRs that change `src/app/**` or `src/components/**`, the job:
+Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review.mjs). Marker: `astryx-advisory-review:v1`.
 
-1. Diffs the PR against the base branch.
-2. Pulls Astryx component and topic docs via the CLI for symbols seen in the diff.
+Runs **once per PR** when reviewable (same trigger pattern as [code review](code-review-ci.md#when-it-runs)), only when paths under `src/app`, `src/components`, or `AGENTS.md` change. Posts a **separate** PR comment from general code review.
+
+1. Diffs UI paths against the base branch.
+2. Pulls Astryx component and topic docs via the CLI.
 3. Calls an LLM with AGENTS.md rules and the diff.
-4. **Creates or updates one PR comment** (marker `astryx-advisory-review:v1`).
-5. Mirrors the comment in the Actions job summary.
+4. Skips if an Astryx review comment already exists (unless **force** manual re-run).
 
-This does **not** block merge. It is not Cursor Bugbot; it runs entirely in GitHub Actions.
+Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 
-### Repository secrets
-
-Configure **one** of:
-
-| Secret | Use |
-|--------|-----|
-| `ANTHROPIC_API_KEY` | Preferred if you use Claude |
-| `OPENAI_API_KEY` | Alternative (default model `gpt-4o-mini`) |
-
-Optional repository variables:
-
-| Variable | Use |
-|----------|-----|
-| `CODE_REVIEW_MODEL` | Model id for general code review (preferred) |
-| `ASTRYX_REVIEW_MODEL` | Model id for Astryx advisory (falls back for code review if unset) |
-
-If neither secret is set, the workflow still succeeds and the PR comment explains that review was skipped.
-
-Draft PRs skip advisory review until marked ready for review.
+Non-blocking; not Cursor Bugbot.
 
 ## Interim ESLint (until official plugin)
 
@@ -97,4 +56,4 @@ Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` ar
 
 ## Branch protection
 
-On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory review should stay optional.
+On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory reviews (Astryx and general code) should stay optional.
