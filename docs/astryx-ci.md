@@ -51,4 +51,4 @@ Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` ar
 
 ## Branch protection
 
-On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Astryx Reviewer should stay optional.
+On `dev`, require the **Astryx Checks** workflow before merge. Astryx Reviewer should stay optional.
