@@ -1,0 +1,13 @@
+# Read from the PR base branch (dev), not the PR head.
+# https://cursor.com/docs/bugbot
+version: 1
+
+triggers:
+  drafts: false
+  frequency: oncePerPr
+
+review:
+  effort: default
+
+autofix:
+  mode: disabled

@@ -1,15 +1,11 @@
-name: Astryx advisory review
+name: Design System Reviewer
 
-# Runs once when a PR becomes reviewable (UI paths only). Manual re-run optional.
+# Listed on reviewable pull requests except those into main. The model runs only when UI files changed.
 
 on:
   pull_request:
-    types: [opened, ready_for_review]
-    branches: [dev]
-    paths:
-      - "src/app/**"
-      - "src/components/**"
-      - "AGENTS.md"
+    types: [opened, synchronize, ready_for_review, reopened]
+    branches-ignore: [main]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -41,11 +37,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: npm
-
       - name: Resolve PR SHAs (manual re-run)
         if: github.event_name == 'workflow_dispatch'
         env:
@@ -58,10 +49,32 @@ jobs:
           echo "BASE_SHA=$base" >> "$GITHUB_ENV"
           echo "HEAD_SHA=$head" >> "$GITHUB_ENV"
 
+      - name: UI files in this pull request
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || env.BASE_SHA }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || env.HEAD_SHA }}
+        run: |
+          files=$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA" -- src/app src/components)
+          if printf '%s\n' "$files" | grep -Eq '^src/(app|components)/.+\.(tsx|ts)$'; then
+            echo "review=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "review=false" >> "$GITHUB_OUTPUT"
+            echo "No UI files changed. Check passed without a model call."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.scope.outputs.review == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+
       - name: Install dependencies
+        if: steps.scope.outputs.review == 'true'
         run: npm ci
 
-      - name: Run advisory design-system review
+      - name: Run Design System Reviewer
+        if: steps.scope.outputs.review == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

@@ -1,4 +1,4 @@
-name: Astryx checks
+name: Astryx Checks
 
 on:
   pull_request:
