@@ -71,20 +71,9 @@ async function runReview() {
 
   const files = changedUiFiles(base, head);
   if (files.length === 0) {
-    const msg =
-      "No changes under `src/app` or `src/components` — Astryx Reviewer skipped.";
-    if (dryRun) {
-      console.log(msg);
-      return;
-    }
-    if (repo && prNumber) {
-      await upsertPrComment(
-        repo,
-        prNumber,
-        `${TITLE}\n\n${msg}\n\n${ADVISORY_FOOTER}`,
-        MARKER,
-      );
-    }
+    console.log(
+      "No changes under `src/app` or `src/components`. Astryx Reviewer passed without a model call.",
+    );
     return;
   }
 
