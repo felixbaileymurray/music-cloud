@@ -1,8 +1,8 @@
 # Astryx CI
 
-GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **design-system advisory review** on pull requests to `dev`.
+GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and an optional **Design System Reviewer** on pull requests.
 
-**General code review** (Anthropic Claude Code Action + code-review plugin, inline PR comments) is documented in [`docs/code-review-ci.md`](code-review-ci.md).
+**General bug review** is [Cursor Bugbot](code-review-ci.md), configured in the Cursor dashboard.
 
 ## Required checks (Layer 1)
 
@@ -26,17 +26,17 @@ npm run lint
 
 Full `npm run lint` (Next.js + TypeScript rules) is still recommended locally; the GitHub job does not gate on it until existing lint debt is cleared.
 
-## Astryx advisory review
+## Design System Reviewer
 
 Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml)
 
 Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review.mjs). Marker: `astryx-advisory-review:v1`.
 
-Runs **once per PR** when reviewable (`opened` / `ready_for_review`, not on every push), only when paths under `src/app`, `src/components`, or `AGENTS.md` change. Posts a **summary PR comment** (not inline threads). Skips if an Astryx review comment already exists unless manual **force** re-run.
+The check is listed on reviewable pull requests (`opened`, `synchronize`, `ready_for_review`, `reopened`) except those into `main`. The model runs only when `src/app` or `src/components` TypeScript files change, and only once per PR unless a manual **force** re-run is used. Later pushes still show the check and skip the model if that comment already exists. No UI changes: the check passes without a comment. Posts a **summary PR comment** (not inline threads).
 
 Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 
-Complements [Claude code review](code-review-ci.md); does not replace it.
+Complements [Bugbot](code-review-ci.md); does not replace it.
 
 ## Interim ESLint (until official plugin)
 
@@ -51,4 +51,4 @@ Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` ar
 
 ## Branch protection
 
-On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory reviews should stay optional.
+On `dev`, require the **Astryx Checks** workflow before merge. Design System Reviewer should stay optional.
