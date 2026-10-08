@@ -24,7 +24,24 @@ npm run lint
 
 Full `npm run lint` (Next.js + TypeScript rules) is still recommended locally; the GitHub job does not gate on it until existing lint debt is cleared.
 
-## Advisory review (Layer 3)
+## Advisory reviews (Layer 3)
+
+Two **non-blocking** workflows run when a PR to `dev` is opened or updated (including the first push after **Ready for review**). Each posts its **own** PR comment and job summary. Draft PRs are skipped.
+
+| Review | Workflow | Scope |
+|--------|----------|--------|
+| **General code** | [`.github/workflows/code-review-advisory.yml`](../.github/workflows/code-review-advisory.yml) | Whole PR diff (bugs, security, perf, maintainability) |
+| **Astryx design system** | [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml) | UI paths + Astryx CLI docs |
+
+Implementation is **provider-agnostic** (Anthropic Messages API or OpenAI Chat Completions), not `anthropics/claude-code-action`. The general review prompt is aligned with Claude Code’s `/code-review` intent; swap models via secrets and `CODE_REVIEW_MODEL` without changing workflows.
+
+### General code review
+
+Script: [`scripts/code-review-advisory.mjs`](../scripts/code-review-advisory.mjs). Marker: `code-review-advisory:v1`.
+
+Does **not** duplicate Astryx feedback (design-system comments are left to the Astryx job).
+
+### Astryx design-system review
 
 Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml)
 
@@ -47,11 +64,12 @@ Configure **one** of:
 | `ANTHROPIC_API_KEY` | Preferred if you use Claude |
 | `OPENAI_API_KEY` | Alternative (default model `gpt-4o-mini`) |
 
-Optional repository variable:
+Optional repository variables:
 
 | Variable | Use |
 |----------|-----|
-| `ASTRYX_REVIEW_MODEL` | Override the model id for the chosen provider |
+| `CODE_REVIEW_MODEL` | Model id for general code review (preferred) |
+| `ASTRYX_REVIEW_MODEL` | Model id for Astryx advisory (falls back for code review if unset) |
 
 If neither secret is set, the workflow still succeeds and the PR comment explains that review was skipped.
 

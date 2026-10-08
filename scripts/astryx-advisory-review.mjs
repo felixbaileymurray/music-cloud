@@ -10,18 +10,21 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import {
+  appendStepSummary,
+  completeAdvisoryLlm,
+  env,
+  gitDiff,
+  upsertPrComment,
+} from "./lib/pr-advisory-common.mjs";
 
 const MARKER = "<!-- astryx-advisory-review:v1 -->";
 const MAX_DIFF_CHARS = 48_000;
 const MAX_DOC_CHARS = 36_000;
 const UI_PATH_RE = /^src\/(app|components)\/.+\.(tsx|ts)$/;
+const ADVISORY_FOOTER = "_Advisory only — does not block merge._";
 
 const dryRun = process.argv.includes("--dry-run");
-
-function env(name) {
-  const v = process.env[name];
-  return v && v.trim() ? v.trim() : null;
-}
 
 function runAstryx(args, { maxChars = 12_000 } = {}) {
   try {
@@ -35,14 +38,6 @@ function runAstryx(args, { maxChars = 12_000 } = {}) {
     const stderr = err.stderr?.toString?.() ?? "";
     return `[astryx ${args.join(" ")} failed: ${err.message}]\n${stderr.slice(0, 2000)}`;
   }
-}
-
-function gitDiff(base, head) {
-  const spec = `${base}...${head}`;
-  return execFileSync("git", ["diff", spec, "--", "src/"], {
-    encoding: "utf8",
-    maxBuffer: 8 * 1024 * 1024,
-  });
 }
 
 function changedUiFiles(base, head) {
@@ -99,106 +94,16 @@ function gatherTopicDocs() {
     : blob;
 }
 
-async function githubRequest(url, { method = "GET", body } = {}) {
-  const token = env("GITHUB_TOKEN");
-  if (!token) throw new Error("GITHUB_TOKEN is required");
-  const res = await fetch(url, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      ...(body ? { "Content-Type": "application/json" } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`GitHub API ${method} ${url}: ${res.status} ${text}`);
-  }
-  return res.json();
-}
-
-async function upsertPrComment(repo, prNumber, body) {
-  const fullBody = `${MARKER}\n${body}`;
-  const listUrl = `https://api.github.com/repos/${repo}/issues/${prNumber}/comments`;
-  const comments = await githubRequest(listUrl);
-  const existing = comments.find(
-    (c) => typeof c.body === "string" && c.body.includes(MARKER),
-  );
-  if (existing) {
-    await githubRequest(
-      `https://api.github.com/repos/${repo}/issues/comments/${existing.id}`,
-      { method: "PATCH", body: { body: fullBody } },
-    );
-    return "updated";
-  }
-  await githubRequest(listUrl, { method: "POST", body: { body: fullBody } });
-  return "created";
-}
-
-async function callAnthropic(system, user) {
-  const key = env("ANTHROPIC_API_KEY");
-  if (!key) return null;
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: env("ASTRYX_REVIEW_MODEL") ?? "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Anthropic API error: ${res.status} ${text}`);
-  }
-  const data = await res.json();
-  const block = data.content?.find((b) => b.type === "text");
-  return block?.text ?? "";
-}
-
-async function callOpenAI(system, user) {
-  const key = env("OPENAI_API_KEY");
-  if (!key) return null;
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: env("ASTRYX_REVIEW_MODEL") ?? "gpt-4o-mini",
-      max_tokens: 2048,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenAI API error: ${res.status} ${text}`);
-  }
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content ?? "";
-}
-
 async function runReview() {
   const repo = env("GITHUB_REPOSITORY");
   const prNumber = env("PR_NUMBER");
-  const base =
-    env("BASE_SHA") ?? env("BASE_REF") ?? "origin/dev";
+  const base = env("BASE_SHA") ?? env("BASE_REF") ?? "origin/dev";
   const head = env("HEAD_SHA") ?? env("HEAD_REF") ?? "HEAD";
 
   const files = changedUiFiles(base, head);
   if (files.length === 0) {
-    const msg = "No changes under `src/app` or `src/components` — advisory review skipped.";
+    const msg =
+      "No changes under `src/app` or `src/components` — advisory review skipped.";
     if (dryRun) {
       console.log(msg);
       return;
@@ -207,13 +112,14 @@ async function runReview() {
       await upsertPrComment(
         repo,
         prNumber,
-        `## Astryx advisory review\n\n${msg}\n\n_Advisory only — does not block merge._`,
+        `## Astryx advisory review\n\n${msg}\n\n${ADVISORY_FOOTER}`,
+        MARKER,
       );
     }
     return;
   }
 
-  let diff = gitDiff(base, head);
+  let diff = gitDiff(base, head, ["src/"]);
   if (diff.length > MAX_DIFF_CHARS) {
     diff = `${diff.slice(0, MAX_DIFF_CHARS)}\n… [diff truncated]`;
   }
@@ -238,7 +144,7 @@ If the diff looks compliant, say so briefly.
 Output GitHub-flavored Markdown:
 - Start with "## Astryx advisory review"
 - Then either "### Looks good" with one short paragraph, OR "### Suggestions" with a bullet list (file path, issue, recommended fix).
-- End with a line: "_Advisory only — does not block merge._"`;
+- End with exactly: ${ADVISORY_FOOTER}`;
 
   const user = `Changed UI files:\n${files.map((f) => `- ${f}`).join("\n")}
 
@@ -262,37 +168,32 @@ ${diff}
     return;
   }
 
-  if (!env("ANTHROPIC_API_KEY") && !env("OPENAI_API_KEY")) {
+  const { text, skipped } = await completeAdvisoryLlm(system, user);
+
+  if (skipped) {
     const skip = `## Astryx advisory review
 
 Advisory review did not run: add repository secret **\`ANTHROPIC_API_KEY\`** or **\`OPENAI_API_KEY\`** (see [docs/astryx-ci.md](docs/astryx-ci.md)).
 
-_Advisory only — does not block merge._`;
-    if (repo && prNumber) await upsertPrComment(repo, prNumber, skip);
+${ADVISORY_FOOTER}`;
+    if (repo && prNumber) await upsertPrComment(repo, prNumber, skip, MARKER);
     console.log("Skipped: no LLM API key configured.");
     return;
   }
 
-  let review =
-    (await callAnthropic(system, user)) ?? (await callOpenAI(system, user));
-  if (!review?.trim()) {
-    throw new Error("LLM returned empty review");
-  }
+  let review = text;
   if (!review.includes("## Astryx advisory review")) {
-    review = `## Astryx advisory review\n\n${review}\n\n_Advisory only — does not block merge._`;
+    review = `## Astryx advisory review\n\n${review}\n\n${ADVISORY_FOOTER}`;
   }
 
   if (repo && prNumber) {
-    const action = await upsertPrComment(repo, prNumber, review);
+    const action = await upsertPrComment(repo, prNumber, review, MARKER);
     console.log(`PR comment ${action} on #${prNumber}`);
   } else {
     console.log(review);
   }
 
-  const summaryPath = env("GITHUB_STEP_SUMMARY");
-  if (summaryPath) {
-    fs.appendFileSync(summaryPath, `${review}\n`);
-  }
+  appendStepSummary(review);
 }
 
 runReview().catch((err) => {
