@@ -2,6 +2,8 @@
 
 Portable **general** pull request review: one LLM pass when a PR becomes reviewable, one PR comment, no merge gate.
 
+Review bar follows Anthropic's Claude Code [`/code-review`](https://github.com/anthropics/claude-code/blob/main/plugins/code-review/commands/code-review.md) plugin (high-signal bugs and agent-doc compliance), simplified to a single model call — see [`scripts/code-review/prompt-anthropic.mjs`](../scripts/code-review/prompt-anthropic.mjs).
+
 Implementation: [`scripts/code-review/`](../scripts/code-review/) (copy that folder + the workflow to other repos).
 
 Workflow: [`.github/workflows/code-review-advisory.yml`](../.github/workflows/code-review-advisory.yml)

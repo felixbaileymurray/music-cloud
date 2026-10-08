@@ -2,6 +2,8 @@
 
 Self-contained **general** pull request review for GitHub Actions. No npm dependencies beyond Node 22+ (uses `fetch` and git).
 
+Review criteria are adapted from Anthropic's Claude Code [code-review command](https://github.com/anthropics/claude-code/blob/main/plugins/code-review/commands/code-review.md) (high-signal bugs + agent-doc compliance). See [`prompt-anthropic.mjs`](prompt-anthropic.mjs). We do **not** run the full plugin (parallel agents, confidence subagents, inline MCP comments).
+
 Copy into any repository:
 
 1. This directory: `scripts/code-review/`
