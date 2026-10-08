@@ -2,7 +2,7 @@
 
 GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **design-system advisory review** on pull requests to `dev`.
 
-General **code review** (bugs, security, maintainability) is a separate portable pack: [`docs/code-review-ci.md`](code-review-ci.md) and [`scripts/code-review/`](../scripts/code-review/).
+**General code review** (Anthropic Claude Code Action + code-review plugin, inline PR comments) is documented in [`docs/code-review-ci.md`](code-review-ci.md).
 
 ## Required checks (Layer 1)
 
@@ -32,16 +32,11 @@ Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/
 
 Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review.mjs). Marker: `astryx-advisory-review:v1`.
 
-Runs **once per PR** when reviewable (same trigger pattern as [code review](code-review-ci.md#when-it-runs)), only when paths under `src/app`, `src/components`, or `AGENTS.md` change. Posts a **separate** PR comment from general code review.
-
-1. Diffs UI paths against the base branch.
-2. Pulls Astryx component and topic docs via the CLI.
-3. Calls an LLM with AGENTS.md rules and the diff.
-4. Skips if an Astryx review comment already exists (unless **force** manual re-run).
+Runs **once per PR** when reviewable (`opened` / `ready_for_review`, not on every push), only when paths under `src/app`, `src/components`, or `AGENTS.md` change. Posts a **summary PR comment** (not inline threads). Skips if an Astryx review comment already exists unless manual **force** re-run.
 
 Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 
-Non-blocking; not Cursor Bugbot.
+Complements [Claude code review](code-review-ci.md); does not replace it.
 
 ## Interim ESLint (until official plugin)
 
@@ -56,4 +51,4 @@ Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` ar
 
 ## Branch protection
 
-On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory reviews (Astryx and general code) should stay optional.
+On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory reviews should stay optional.
