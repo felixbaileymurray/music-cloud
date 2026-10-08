@@ -1,39 +1,27 @@
-# Claude Code review (GitHub)
+# Pull request review
 
-General pull request review uses Anthropic’s **[Claude Code GitHub Action](https://github.com/anthropics/claude-code-action)** with the official **[code-review plugin](https://github.com/anthropics/claude-code/tree/main/plugins/code-review)** (`/code-review:code-review --comment`). That is the same stack as Claude Code’s native `/code-review` skill: multi-agent review, high-signal filtering, **inline comments** on the PR, plus a summary when needed.
+General bug review is **[Cursor Bugbot](https://cursor.com/docs/bugbot)**, not a GitHub Action. The previous Claude Code review workflow (`claude-code-action` + `/code-review`) was removed because a single multi-agent run often costs about $15–25 in Anthropic credits.
 
-Workflow: [`.github/workflows/claude-code-review.yml`](../.github/workflows/claude-code-review.yml)
+Bugbot posts inline comments on the pull request. On individual plans it draws from included Cursor usage first; extra runs bill on-demand. Cursor’s published average is about **$1.00–$1.50 per run** (varies with diff size).
 
-Design-system (Astryx) feedback is separate: [`docs/astryx-ci.md`](astryx-ci.md#astryx-advisory-review).
+[`.cursor/config/bugbot.yaml`](../.cursor/config/bugbot.yaml) sets **once per PR**, skips drafts, and leaves Autofix off. Bugbot reads that file from the PR **base** branch (`dev`), so it applies only after this change is on `dev`. A personal dashboard override still wins over the file.
 
-## When it runs
+## Setup (one time, in Cursor)
 
-| Event | Behavior |
-|-------|----------|
-| **Draft PR** | Skipped (`draft == false` in the workflow; the plugin also skips drafts) |
-| **Ready for review** | Runs when the PR leaves draft |
-| **Open PR (not draft)** | Runs on `opened` |
-| **Later pushes** | **Not** triggered (no `synchronize`) — saves cost; the plugin also skips PRs it already reviewed |
+1. Connect GitHub in the Cursor dashboard.
+2. Open Bugbot in Automations and enable it on this repository.
 
-To run again after large changes: re-run the **Claude code review** workflow from the Actions tab (the plugin may still skip if it detects an existing Claude review comment — see Anthropic docs).
+Manual re-run from a PR comment: `bugbot run` (or `cursor review`), if your Bugbot access allows it. On an individual plan, automatic reviews run only on pull requests you author.
 
-## Setup (one time)
+Local check before opening a PR: ask the Cursor agent for a Bugbot review of the branch. That uses the same product and the same usage pool.
 
-1. **API key:** Repository secret **`ANTHROPIC_API_KEY`** (Anthropic Console).
-2. **Permissions:** The workflow sets `id-token: write` for the action’s auth exchange. Inline comments need `pull-requests: write`.
-3. **Optional:** In Claude Code locally, `/install-github-app` for the Claude GitHub App (needed for `@claude` workflows; the code-review plugin workflow above uses the API key path from [Anthropic’s docs](https://code.claude.com/docs/en/github-actions)).
-
-On **public** repos, secrets are not passed to workflows from **fork** PRs; review runs only for branches in the same repository.
-
-## Project guidelines (CLAUDE.md)
-
-The plugin’s compliance agents read **CLAUDE.md** files on touched paths. This repo’s root [`CLAUDE.md`](../CLAUDE.md) points at [`AGENTS.md`](../AGENTS.md) and contributing docs.
+Design-system feedback is separate and still runs in GitHub Actions: [`docs/astryx-ci.md`](astryx-ci.md#astryx-advisory-review). That job is one model call (Anthropic or OpenAI), not the multi-agent Claude review.
 
 ## Relation to Astryx advisory
 
-| Job | Tooling | Focus |
-|-----|---------|--------|
-| **Claude code review** | `claude-code-action` + plugin | Bugs, CLAUDE.md/AGENTS.md compliance, inline threads |
+| Job | Where it runs | Focus |
+|-----|----------------|--------|
+| **Bugbot** | Cursor, on the GitHub PR | Bugs and regressions, inline comments |
 | **Astryx advisory** | `scripts/astryx-advisory/` | Astryx CLI docs, component choice (summary comment) |
 
-Both are advisory (non-blocking) unless you add branch rules yourself.
+Both are advisory unless you add branch rules yourself.

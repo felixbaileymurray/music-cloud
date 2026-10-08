@@ -2,7 +2,7 @@
 
 GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **design-system advisory review** on pull requests to `dev`.
 
-**General code review** (Anthropic Claude Code Action + code-review plugin, inline PR comments) is documented in [`docs/code-review-ci.md`](code-review-ci.md).
+**General bug review** is [Cursor Bugbot](code-review-ci.md), configured in the Cursor dashboard.
 
 ## Required checks (Layer 1)
 
@@ -36,7 +36,7 @@ Runs **once per PR** when reviewable (`opened` / `ready_for_review`, not on ever
 
 Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 
-Complements [Claude code review](code-review-ci.md); does not replace it.
+Complements [Bugbot](code-review-ci.md); does not replace it.
 
 ## Interim ESLint (until official plugin)
 

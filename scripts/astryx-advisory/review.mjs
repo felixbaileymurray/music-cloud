@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 /**
  * Astryx design-system advisory PR review. Requires @astryxdesign/cli in the repo.
- * General code review lives in scripts/code-review/ (portable, separate workflow).
+ * General bug review is Cursor Bugbot (docs/code-review-ci.md), not this script.
  *
  * Local dry-run:
  *   BASE=origin/dev HEAD=HEAD node scripts/astryx-advisory/review.mjs --dry-run
  */
 
 import { execFileSync } from "node:child_process";
-import { env } from "../code-review/lib/env.mjs";
-import { gitDiff } from "../code-review/lib/git.mjs";
+import { env } from "./lib/env.mjs";
+import { gitDiff } from "./lib/git.mjs";
 import {
   appendStepSummary,
   prCommentWithMarkerExists,
   upsertPrComment,
-} from "../code-review/lib/github.mjs";
-import { completeLlm } from "../code-review/lib/llm.mjs";
+} from "./lib/github.mjs";
+import { completeLlm } from "./lib/llm.mjs";
 import {
   extractCoreComponents,
   gatherComponentDocs,
