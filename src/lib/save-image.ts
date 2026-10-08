@@ -2,6 +2,9 @@ import { toBlob, toJpeg, toPng } from "html-to-image";
 import { brand } from "@/lib/brand";
 import type { CloudKind } from "@/lib/types";
 
+/** Filename segment for save exports (music kinds or images feature). */
+export type SaveFeatureLabel = CloudKind | "images";
+
 export type SaveImageFormat = "png" | "jpeg" | "webp";
 export type SaveResolutionPreset = "low" | "medium" | "high";
 
@@ -22,7 +25,7 @@ const FORMAT_EXT: Record<SaveImageFormat, string> = {
 };
 
 export function saveImageFileName(
-  kind: CloudKind,
+  kind: SaveFeatureLabel,
   format: SaveImageFormat,
   date = new Date()
 ) {
@@ -32,7 +35,7 @@ export function saveImageFileName(
   return `${brand.slug}-${kind}-${yyyy}-${mm}-${dd}.${FORMAT_EXT[format]}`;
 }
 
-export function saveJsonFileName(kind: CloudKind, date = new Date()) {
+export function saveJsonFileName(kind: SaveFeatureLabel, date = new Date()) {
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
