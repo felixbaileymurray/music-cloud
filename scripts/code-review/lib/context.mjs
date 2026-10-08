@@ -8,7 +8,13 @@ export function readRepoContext() {
   const fromEnv = process.env.CODE_REVIEW_CONTEXT_FILES?.trim();
   const files = fromEnv
     ? fromEnv.split(",").map((f) => f.trim()).filter(Boolean)
-    : ["docs/contributing.md", "docs/architecture.md", "README.md"];
+    : [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "docs/contributing.md",
+        "docs/architecture.md",
+        "README.md",
+      ];
 
   const hints = [];
   for (const file of files) {
