@@ -1,6 +1,6 @@
 # Astryx CI
 
-GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **Astryx Reviewer** on pull requests to `dev`.
+GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and an optional **Design System Reviewer** on pull requests.
 
 **General bug review** is [Cursor Bugbot](code-review-ci.md), configured in the Cursor dashboard.
 
@@ -26,13 +26,13 @@ npm run lint
 
 Full `npm run lint` (Next.js + TypeScript rules) is still recommended locally; the GitHub job does not gate on it until existing lint debt is cleared.
 
-## Astryx Reviewer
+## Design System Reviewer
 
 Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml)
 
 Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review.mjs). Marker: `astryx-advisory-review:v1`.
 
-The check is listed on every reviewable pull request to `dev` (`opened`, `synchronize`, `ready_for_review`, `reopened`). The model runs only when `src/app` or `src/components` TypeScript files change, and only once per PR unless a manual **force** re-run is used. Later pushes still show the check and skip the model if that comment already exists. No UI changes: the check passes without a comment. Posts a **summary PR comment** (not inline threads).
+The check is listed on every reviewable pull request (`opened`, `synchronize`, `ready_for_review`, `reopened`), whatever the base branch. The model runs only when `src/app` or `src/components` TypeScript files change, and only once per PR unless a manual **force** re-run is used. Later pushes still show the check and skip the model if that comment already exists. No UI changes: the check passes without a comment. Posts a **summary PR comment** (not inline threads).
 
 Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 
@@ -51,4 +51,4 @@ Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` ar
 
 ## Branch protection
 
-On `dev`, require the **Astryx Checks** workflow before merge. Astryx Reviewer should stay optional.
+On `dev`, require the **Astryx Checks** workflow before merge. Design System Reviewer should stay optional.

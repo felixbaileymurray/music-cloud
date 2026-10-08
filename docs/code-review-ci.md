@@ -15,13 +15,13 @@ Manual re-run from a PR comment: `bugbot run` (or `cursor review`), if your Bugb
 
 Local check before opening a PR: ask the Cursor agent for a Bugbot review of the branch. That uses the same product and the same usage pool.
 
-Design-system feedback is separate and still runs in GitHub Actions as [Astryx Reviewer](astryx-ci.md#astryx-reviewer). That job is one model call (Anthropic or OpenAI), not the multi-agent Claude review.
+Design-system feedback is separate and still runs in GitHub Actions as [Design System Reviewer](astryx-ci.md#design-system-reviewer). That job is one model call (Anthropic or OpenAI), not the multi-agent Claude review.
 
-## Relation to Astryx Reviewer
+## Relation to Design System Reviewer
 
 | Job | Where it runs | Focus |
 |-----|----------------|--------|
 | **Bugbot** | Cursor, on the GitHub PR | Bugs and regressions, inline comments |
-| **Astryx Reviewer** | `scripts/astryx-advisory/` | Astryx CLI docs, component choice (summary comment) |
+| **Design System Reviewer** | `scripts/astryx-advisory/` | Astryx CLI docs, component choice (summary comment) |
 
 Both are advisory unless you add branch rules yourself.

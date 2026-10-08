@@ -1,11 +1,10 @@
-name: Astryx Reviewer
+name: Design System Reviewer
 
-# Always listed on reviewable PRs to dev. The model runs only when UI files changed.
+# Listed on every reviewable pull request. The model runs only when UI files changed.
 
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
-    branches: [dev]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -73,7 +72,7 @@ jobs:
         if: steps.scope.outputs.review == 'true'
         run: npm ci
 
-      - name: Run Astryx Reviewer
+      - name: Run Design System Reviewer
         if: steps.scope.outputs.review == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
