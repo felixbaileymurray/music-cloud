@@ -1,6 +1,6 @@
 # Astryx CI
 
-GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **design-system advisory review** on pull requests to `dev`.
+GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **Astryx Reviewer** on pull requests to `dev`.
 
 **General bug review** is [Cursor Bugbot](code-review-ci.md), configured in the Cursor dashboard.
 
@@ -26,13 +26,13 @@ npm run lint
 
 Full `npm run lint` (Next.js + TypeScript rules) is still recommended locally; the GitHub job does not gate on it until existing lint debt is cleared.
 
-## Astryx advisory review
+## Astryx Reviewer
 
 Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml)
 
 Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review.mjs). Marker: `astryx-advisory-review:v1`.
 
-Runs **once per PR** when reviewable (`opened` / `ready_for_review`, not on every push), only when paths under `src/app`, `src/components`, or `AGENTS.md` change. Posts a **summary PR comment** (not inline threads). Skips if an Astryx review comment already exists unless manual **force** re-run.
+Runs **once per PR** when reviewable (`opened` / `ready_for_review`, not on every push), only when paths under `src/app`, `src/components`, or `AGENTS.md` change. Posts a **summary PR comment** (not inline threads). Skips if an Astryx Reviewer comment already exists unless manual **force** re-run.
 
 Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 
@@ -51,4 +51,4 @@ Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` ar
 
 ## Branch protection
 
-On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory reviews should stay optional.
+On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Astryx Reviewer should stay optional.

@@ -42,7 +42,7 @@ Spotify is optional. Without it, use manual upload or **See an example**.
 | `npm run lint` | ESLint |
 | `npm run astryx:check` | Astryx doctor + theme artifact check |
 | `npm run lint:astryx-interim` | Interim Astryx ESLint (see docs/astryx-ci.md) |
-| `npm run astryx:review` | Astryx design-system advisory (`--dry-run`) |
+| `npm run astryx:review` | Astryx Reviewer (`--dry-run`) |
 | `npm run theme:build` | Build the Bricola Astryx theme CSS |
 | `npm run theme:check` | Fail if theme artifacts are stale |
 | `npm run test:e2e` | Playwright E2E (headless) |

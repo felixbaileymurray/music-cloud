@@ -1,4 +1,4 @@
-name: Astryx advisory review
+name: Astryx Reviewer
 
 # Runs once when a PR becomes reviewable (UI paths only). Manual re-run optional.
 
@@ -61,7 +61,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run advisory design-system review
+      - name: Run Astryx Reviewer
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}

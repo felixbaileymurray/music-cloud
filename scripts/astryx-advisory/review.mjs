@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Astryx design-system advisory PR review. Requires @astryxdesign/cli in the repo.
+ * Astryx Reviewer. Requires @astryxdesign/cli in the repo.
  * General bug review is Cursor Bugbot (docs/code-review-ci.md), not this script.
  *
  * Local dry-run:
@@ -64,7 +64,7 @@ async function runReview() {
     (await prCommentWithMarkerExists(repo, prNumber, MARKER))
   ) {
     console.log(
-      "Astryx review comment already exists for this PR; skipping (workflow re-run with force, or FORCE_REVIEW=true).",
+      "Astryx Reviewer comment already exists for this PR; skipping (workflow re-run with force, or FORCE_REVIEW=true).",
     );
     return;
   }
@@ -72,7 +72,7 @@ async function runReview() {
   const files = changedUiFiles(base, head);
   if (files.length === 0) {
     const msg =
-      "No changes under `src/app` or `src/components` — advisory review skipped.";
+      "No changes under `src/app` or `src/components` — Astryx Reviewer skipped.";
     if (dryRun) {
       console.log(msg);
       return;
@@ -126,7 +126,7 @@ ${diff}
   if (skipped) {
     const skip = `${TITLE}
 
-Advisory review did not run: add repository secret **\`ANTHROPIC_API_KEY\`** or **\`OPENAI_API_KEY\`** (see [docs/astryx-ci.md](docs/astryx-ci.md)).
+Astryx Reviewer did not run: add repository secret **\`ANTHROPIC_API_KEY\`** or **\`OPENAI_API_KEY\`** (see [docs/astryx-ci.md](docs/astryx-ci.md)).
 
 ${ADVISORY_FOOTER}`;
     if (repo && prNumber) await upsertPrComment(repo, prNumber, skip, MARKER);

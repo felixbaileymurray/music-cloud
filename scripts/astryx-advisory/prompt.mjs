@@ -1,6 +1,6 @@
 export const MARKER = "<!-- astryx-advisory-review:v1 -->";
 export const ADVISORY_FOOTER = "_Advisory only — does not block merge._";
-export const TITLE = "## Astryx advisory review";
+export const TITLE = "## Astryx Reviewer";
 
 export function buildSystemPrompt() {
   return `You are a design-system reviewer for an app using Astryx (@astryxdesign/core).

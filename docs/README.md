@@ -29,6 +29,6 @@ Also see:
 | Open a PR | [contributing.md](contributing.md) |
 | Cut a release or check deploy | [ops.md](ops.md) |
 | Advisory PR review (Bugbot) | [code-review-ci.md](code-review-ci.md) |
-| Astryx CI and design-system advisory | [astryx-ci.md](astryx-ci.md) |
+| Astryx CI and Astryx Reviewer | [astryx-ci.md](astryx-ci.md) |
 | See what is not built yet | [roadmap.md](roadmap.md) |
 | Run or extend automated tests | [testing.md](testing.md) |
