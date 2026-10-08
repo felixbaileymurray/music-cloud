@@ -1,10 +1,11 @@
 name: Design System Reviewer
 
-# Listed on every reviewable pull request. The model runs only when UI files changed.
+# Listed on reviewable pull requests except those into main. The model runs only when UI files changed.
 
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
+    branches-ignore: [main]
   workflow_dispatch:
     inputs:
       pr_number:

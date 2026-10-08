@@ -32,7 +32,7 @@ Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/
 
 Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review.mjs). Marker: `astryx-advisory-review:v1`.
 
-The check is listed on every reviewable pull request (`opened`, `synchronize`, `ready_for_review`, `reopened`), whatever the base branch. The model runs only when `src/app` or `src/components` TypeScript files change, and only once per PR unless a manual **force** re-run is used. Later pushes still show the check and skip the model if that comment already exists. No UI changes: the check passes without a comment. Posts a **summary PR comment** (not inline threads).
+The check is listed on reviewable pull requests (`opened`, `synchronize`, `ready_for_review`, `reopened`) except those into `main`. The model runs only when `src/app` or `src/components` TypeScript files change, and only once per PR unless a manual **force** re-run is used. Later pushes still show the check and skip the model if that comment already exists. No UI changes: the check passes without a comment. Posts a **summary PR comment** (not inline threads).
 
 Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 

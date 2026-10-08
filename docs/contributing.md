@@ -24,7 +24,7 @@ Title style: imperative, specific (see recent merges into `dev`).
 - Run `npm run astryx:check`, `npm run lint`, and `npm run build` when the change warrants it.
 - After theme source edits, run `npm run theme:check` (or `theme:build`).
 
-Reviewable pull requests get a [Design System Reviewer](astryx-ci.md#design-system-reviewer) check (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`). They can also get an optional [Bugbot review](code-review-ci.md) (Cursor, inline comments; enable on the repo in the Cursor dashboard).
+Reviewable pull requests, except those into `main`, get a [Design System Reviewer](astryx-ci.md#design-system-reviewer) check (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`). They can also get an optional [Bugbot review](code-review-ci.md) (Cursor, inline comments; enable on the repo in the Cursor dashboard).
 
 ## UI
 
