@@ -9,7 +9,7 @@
     "lint": "eslint",
     "astryx:check": "astryx doctor && npm run theme:check",
     "lint:astryx-interim": "eslint --config eslint.astryx-interim-standalone.mjs src/app src/components",
-    "astryx:review": "node scripts/astryx-advisory-review.mjs",
+    "astryx:review": "node scripts/astryx-advisory/review.mjs",
     "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",

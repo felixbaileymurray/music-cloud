@@ -1,6 +1,8 @@
-# Astryx CI and advisory review
+# Astryx CI
 
-GitHub Actions enforce Astryx **setup and theme artifacts** on pull requests to `dev`. A separate workflow posts an **advisory** design-system review on PRs that touch UI code.
+GitHub Actions for **Astryx setup**, theme artifacts, interim ESLint, and optional **design-system advisory review** on pull requests to `dev`.
+
+**General code review** (Anthropic Claude Code Action + code-review plugin, inline PR comments) is documented in [`docs/code-review-ci.md`](code-review-ci.md).
 
 ## Required checks (Layer 1)
 
@@ -24,38 +26,17 @@ npm run lint
 
 Full `npm run lint` (Next.js + TypeScript rules) is still recommended locally; the GitHub job does not gate on it until existing lint debt is cleared.
 
-## Advisory review (Layer 3)
+## Astryx advisory review
 
 Workflow: [`.github/workflows/astryx-advisory-review.yml`](../.github/workflows/astryx-advisory-review.yml)
 
-On PRs that change `src/app/**` or `src/components/**`, the job:
+Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review.mjs). Marker: `astryx-advisory-review:v1`.
 
-1. Diffs the PR against the base branch.
-2. Pulls Astryx component and topic docs via the CLI for symbols seen in the diff.
-3. Calls an LLM with AGENTS.md rules and the diff.
-4. **Creates or updates one PR comment** (marker `astryx-advisory-review:v1`).
-5. Mirrors the comment in the Actions job summary.
+Runs **once per PR** when reviewable (`opened` / `ready_for_review`, not on every push), only when paths under `src/app`, `src/components`, or `AGENTS.md` change. Posts a **summary PR comment** (not inline threads). Skips if an Astryx review comment already exists unless manual **force** re-run.
 
-This does **not** block merge. It is not Cursor Bugbot; it runs entirely in GitHub Actions.
+Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
 
-### Repository secrets
-
-Configure **one** of:
-
-| Secret | Use |
-|--------|-----|
-| `ANTHROPIC_API_KEY` | Preferred if you use Claude |
-| `OPENAI_API_KEY` | Alternative (default model `gpt-4o-mini`) |
-
-Optional repository variable:
-
-| Variable | Use |
-|----------|-----|
-| `ASTRYX_REVIEW_MODEL` | Override the model id for the chosen provider |
-
-If neither secret is set, the workflow still succeeds and the PR comment explains that review was skipped.
-
-Draft PRs skip advisory review until marked ready for review.
+Complements [Claude code review](code-review-ci.md); does not replace it.
 
 ## Interim ESLint (until official plugin)
 
@@ -70,4 +51,4 @@ Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` ar
 
 ## Branch protection
 
-On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory review should stay optional.
+On `dev`, require the **Astryx checks** workflow (or its job name) before merge. Advisory reviews should stay optional.
