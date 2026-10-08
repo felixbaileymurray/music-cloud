@@ -63,6 +63,12 @@
   height: 100% !important;
 }
 
+.paper-swatch__mark {
+  display: block;
+  width: var(--spacing-5);
+  height: var(--spacing-5);
+}
+
 .spa-cloud-stage {
   position: relative;
   z-index: 1;

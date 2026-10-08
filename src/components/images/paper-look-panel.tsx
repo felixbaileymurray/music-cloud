@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { Heading } from "@astryxdesign/core/Heading";
 import { Switch } from "@astryxdesign/core/Switch";
 import {
@@ -60,22 +61,16 @@ export function PaperLookPanel({
                   value={palette.id}
                   label={palette.label}
                   isIconOnly
-                  style={{
-                    backgroundColor: palette.colorPaper,
-                    borderWidth: "var(--border-width)",
-                    borderStyle: "solid",
-                    borderColor: "var(--color-border)",
-                  }}
-                  icon={
-                    <span
-                      style={{
-                        display: "block",
-                        width: "var(--spacing-5)",
-                        height: "var(--spacing-5)",
-                      }}
-                      aria-hidden
-                    />
+                  style={
+                    {
+                      "--paper-swatch": palette.colorPaper,
+                      backgroundColor: "var(--paper-swatch)",
+                      borderWidth: "var(--border-width)",
+                      borderStyle: "solid",
+                      borderColor: "var(--color-border)",
+                    } as CSSProperties
                   }
+                  icon={<span className="paper-swatch__mark" aria-hidden />}
                 />
               ))}
             </ToggleButtonGroup>

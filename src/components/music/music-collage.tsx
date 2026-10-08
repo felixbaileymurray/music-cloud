@@ -606,9 +606,7 @@ export function MusicCollage() {
     setReplaceWarningReason("create");
   }
 
-  async function prepareNeutralCapture(
-    _resolution?: import("@/lib/save-image").SaveResolutionPreset
-  ) {
+  async function prepareNeutralCapture() {
     setExportNeutral(true);
     setHovered(null);
     resetAudio();

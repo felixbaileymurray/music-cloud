@@ -31,7 +31,6 @@ export function PaperBackground({
       className="spa-paper-bg"
       aria-hidden="true"
       data-paper-enabled={enabled ? "true" : "false"}
-      style={{ background: palette.colorPaper }}
     >
       {enabled ? (
         <PaperTexture
