@@ -34,7 +34,7 @@ Script: [`scripts/astryx-advisory/review.mjs`](../scripts/astryx-advisory/review
 
 The check is listed on reviewable pull requests (`opened`, `synchronize`, `ready_for_review`, `reopened`) except those into `main`. The model runs only when `src/app` or `src/components` TypeScript files change, and only once per PR unless a manual **force** re-run is used. Later pushes still show the check and skip the model if that comment already exists. No UI changes: the check passes without a comment. Posts a **summary PR comment** (not inline threads).
 
-Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL`.
+Secrets: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Optional variable: `ASTRYX_REVIEW_MODEL` overrides the default Anthropic model (`claude-sonnet-5-5`).
 
 Complements [Bugbot](code-review-ci.md); does not replace it.
 

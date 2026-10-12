@@ -35,7 +35,7 @@ const dryRun = process.argv.includes("--dry-run");
 
 const LLM_OPTIONS = {
   modelEnv: "ASTRYX_REVIEW_MODEL",
-  anthropicDefault: "claude-sonnet-4-20250514",
+  anthropicDefault: "claude-sonnet-5-5",
   openaiDefault: "gpt-4o-mini",
 };
 
