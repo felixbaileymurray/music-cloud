@@ -18,6 +18,10 @@ export default defineConfig([
     plugins: {
       "@next/next": nextPlugin,
     },
+    rules: {
+      // Keep disable comments in sync with eslint-config-next (full `npm run lint`).
+      "@next/next/no-img-element": "error",
+    },
   },
   astryxInterimConfig,
 ]);

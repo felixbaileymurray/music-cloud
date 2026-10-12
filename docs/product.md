@@ -15,6 +15,8 @@ It is not a full library or a full-track player. Only items with a matched, play
 
 ## Main journeys
 
+### Music (`/music`)
+
 1. **Create**
    - Connect Spotify (top tracks, recently played, or saved tracks), or
    - Upload a manual list (album or track), or
@@ -23,6 +25,12 @@ It is not a full library or a full-track player. Only items with a matched, play
 3. **Explore** — set how many covers show. Hover to play. Click to lock a cover and keep the sidebar open.
 4. **Share** — copy a link (visible items ≤ 50) or download JSON (any size).
 5. **Save** — export a canvas image (PNG / JPEG / WebP) and/or a JSON snapshot.
+
+### Images (`/images`)
+
+1. **Create** — **Create Manually** (local photos) or **See an example** (bundled architecture photos). Separate flow from music; no Spotify / resolve.
+2. **Explore** — arrange on a paper canvas; customise colour, texture, spacing, and frame.
+3. **Save** — export a still image. Link share is not offered yet.
 
 ## Cloud kinds
 

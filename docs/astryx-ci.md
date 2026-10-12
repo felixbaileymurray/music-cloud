@@ -45,6 +45,8 @@ Meta’s `eslint-plugin-astryx` is not published on npm yet. Until it is, [`esli
 - inline `style={{…}}` on JSX in app UI files
 - arbitrary Tailwind literals in `className` (e.g. `p-[13px]`)
 
+The standalone CI config also enables `@next/next/no-img-element`, so existing `eslint-disable` comments for that rule stay valid. Full `npm run lint` already enables it via `eslint-config-next`.
+
 Canvas shells (`cloud-app.tsx`, `cover-cloud.tsx`) and `src/components/ui/**` are excluded.
 
 **When `@astryxdesign/eslint-plugin` (or equivalent) ships:** remove `eslint.astryx-interim.mjs`, drop its import from `eslint.config.mjs`, and adopt the official plugin config instead. Do not extend the interim rules further.
