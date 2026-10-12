@@ -15,7 +15,7 @@ async function callAnthropic(system, user, options = {}) {
   const key = env("ANTHROPIC_API_KEY");
   if (!key) return null;
   const model =
-    resolveModel(options) ?? options.anthropicDefault ?? "claude-sonnet-4-20250514";
+    resolveModel(options) ?? options.anthropicDefault ?? "claude-sonnet-5-5";
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
