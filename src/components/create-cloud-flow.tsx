@@ -18,6 +18,7 @@ import { VStack } from "@astryxdesign/core/VStack";
 import { Disc3, Music2, PenLine, Sparkles, UserRound } from "lucide-react";
 import { HistoryIntake } from "@/components/history-intake";
 import { SpotifyIcon } from "@/components/streaming-service-icons";
+import { brand } from "@/lib/brand";
 import { buildExampleAlbumParseResult } from "@/lib/example-albums";
 import type { ParseKind } from "@/lib/parse-history";
 import type {
@@ -27,6 +28,8 @@ import type {
   TrackListen,
   TrackParseResult,
 } from "@/lib/types";
+
+const SPOTIFY_NOT_CONFIGURED_MESSAGE = `The Spotify connection is not configured correctly. Report a bug: ${brand.contactEmail}`;
 
 type BuildRoute = "spotify" | "manual";
 type Step = "chooser" | "kind" | "spotify-source" | "manual";
@@ -161,7 +164,7 @@ export function CreateCloudFlow({
 
   function startSpotify() {
     if (!status?.configured) {
-      setError("The Spotify connection is not configured correctly. Report a bug: feedback@bricola.art");
+      setError(SPOTIFY_NOT_CONFIGURED_MESSAGE);
       return;
     }
     if (!status.connected) {
@@ -281,7 +284,7 @@ export function CreateCloudFlow({
         {status?.configured === false ? (
           <Banner
             status="warning"
-            title="The Spotify connection is not configured correctly. Report a bug: feedback@bricola.art"
+            title={SPOTIFY_NOT_CONFIGURED_MESSAGE}
             collapsible={false}
           />
         ) : null}

@@ -72,7 +72,7 @@ export function AboutModal({
                       tooltip="Email"
                       variant="ghost"
                       size="sm"
-                      href={`mailto:${author.email}`}
+                      href={`mailto:${brand.contactEmail}`}
                       icon={<Icon icon={Mail} size="sm" />}
                     />
                     <IconButton

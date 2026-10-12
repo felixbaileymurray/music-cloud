@@ -1,4 +1,6 @@
 /** Product brand — see `.cursor/rules/brand.mdc`. Change here when the product is renamed. */
+const domain = "bricola.art";
+
 export const brand = {
   /** Wordmark / chrome — lowercase. */
   name: "bricola",
@@ -6,6 +8,8 @@ export const brand = {
   nameSentence: "Bricola",
   /** Filenames and UA token. */
   slug: "bricola",
-  domain: "bricola.art",
-  origin: "https://bricola.art",
+  domain,
+  origin: `https://${domain}`,
+  /** Feedback, support, and other product contact. */
+  contactEmail: `felix@${domain}`,
 } as const;
